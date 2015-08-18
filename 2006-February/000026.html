@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r40 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r40%20-%20trunk&In-Reply-To=%3C200602091229.k19CTeLu008409%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000025.html">
+   <LINK REL="Next"  HREF="000027.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r40 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r40%20-%20trunk&In-Reply-To=%3C200602091229.k19CTeLu008409%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r40 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Thu Feb  9 13:29:40 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000025.html">[Pwnbot-commits] r39 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000027.html">[Pwnbot-commits] r41 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-09 13:29:21 +0100 (Thu, 09 Feb 2006)
+New Revision: 40
+
+Modified:
+   trunk/xwars.py
+Log:
+manipulation funktioniert soweit, kommandozeile benutzbar
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-09 11:39:36 UTC (rev 39)
++++ trunk/xwars.py	2006-02-09 12:29:21 UTC (rev 40)
+@@ -4,8 +4,9 @@
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+-from time import strptime
++from time import strptime, strftime
+ from re import compile
++from sys import argv
+ 
+ # Konfiguration
+ # Mit was soll die URl anfangen?
+@@ -165,6 +166,9 @@
+         }
+         self.template = template
+ 
++    def _make_namestring(self):
++        self.namestring = '%(Angreiferallianz)s%(Angreifername)s-%(Verteidigerallianz)s-%(Verteidigername)s-%(Zeit)s' % {'Angreiferallianz':self.startbasis['Allianz'],'Angreifername':self.startbasis['Name'],'Verteidigerallianz':self.zielbasis['Allianz'],'Verteidigername':self.zielbasis['Name'],'Zeit':strftime('%Y%m%d-%H%M',self.zeit)}
++        
+     def _insert_template(self):
+         berichtliste = self.bericht.splitlines()
+         del berichtliste[berichtliste.index('                &lt;td bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;Gesamt&nbsp;&lt;br&gt;(netto)&nbsp;&lt;/td&gt;') + 2]
+@@ -177,8 +181,24 @@
+         bericht = koordinatenregexp.sub('',bericht)
+         bericht = bericht.replace('Login','The Dominion')
+         bericht = bericht.replace('auf Planet','auf einem Planeten')
++        bericht = bericht.replace('&lt;title&gt;X-Wars - The Third Legend (Gameserver)&lt;/title&gt;','&lt;title&gt;%s&lt;/title&gt;' % self.namestring)
++        bericht = bericht.replace('Schiffe von','Schiffe')
++        bericht = bericht.replace('Verteidigung auf','Verteidigung')
+         self.bearbeiteterbericht = bericht.splitlines()
+         
+     def save(self):
+-        berichtdatei = open(savedir + self.id,'w')
++        self.dateiname = savedir + self.namestring.replace('[','').replace(']','-') + '.html'
++        berichtdatei = open(self.dateiname,'w')
+         berichtdatei.writelines(self.bearbeiteterbericht)
++
++if __name__ == &quot;__main__&quot;:
++    kb = kampfbericht(argv[1])
++    kb._get_daten()
++    kb._get_werte()
++    kb._get_verluste()
++    kb._make_template()
++    kb._insert_template()
++    kb._make_namestring()
++    kb.manipulate()
++    kb.save()
++    print kb.dateiname
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000025.html">[Pwnbot-commits] r39 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000027.html">[Pwnbot-commits] r41 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

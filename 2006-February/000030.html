@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r44 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r44%20-%20trunk&In-Reply-To=%3C200602101849.k1AInRiD006891%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000029.html">
+   <LINK REL="Next"  HREF="000031.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r44 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r44%20-%20trunk&In-Reply-To=%3C200602101849.k1AInRiD006891%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r44 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Fri Feb 10 19:49:27 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000029.html">[Pwnbot-commits] r43 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000031.html">[Pwnbot-commits] r45 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#30">[ date ]</a>
+              <a href="thread.html#30">[ thread ]</a>
+              <a href="subject.html#30">[ subject ]</a>
+              <a href="author.html#30">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-10 19:49:26 +0100 (Fri, 10 Feb 2006)
+New Revision: 44
+
+Modified:
+   trunk/ircbot.py
+Log:
+bot als daemon, utf8
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-09 23:18:20 UTC (rev 43)
++++ trunk/ircbot.py	2006-02-10 18:49:26 UTC (rev 44)
+@@ -14,10 +14,13 @@
+ # # ### ### ### ### ### ### ### ### ### ### ### #
+ 
+ # was an modulen gebraucht wird.
+-import socket # f&#252;r die IRC-Verbindung
+-from sys import exit
++import socket # f&#195;&#188;r die IRC-Verbindung
++import sys
++import time
++import os
++import xwars
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+-# wird als erstes aufgerufen. Sie stellt die Verbindung her und k&#252;mmert sich um
++# wird als erstes aufgerufen. Sie stellt die Verbindung her und k&#195;&#188;mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+ # andere Klasse aufgerufen,
+ 
+@@ -34,13 +37,13 @@
+     def _verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her und gibt zur Verarbeitung weiter
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             server: string (host) oder tuple (host, port)
+             nickname: string oder liste
+             ident: optional string
+             realname: optional string
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+@@ -68,10 +71,10 @@
+     def _verarbeite_reingehendes(self):
+         '''liest den Buffer aus und verteilt das Reingehende auf die Funktionen
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             nichts
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+@@ -90,7 +93,7 @@
+                 #log verbindung ist weg
+                 break
+             temp = self._lesebuffer.split('\n')
+-            self._lesebuffer = temp.pop() # Die letzte Zeile wird zur&#252;ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
++            self._lesebuffer = temp.pop() # Die letzte Zeile wird zur&#195;&#188;ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+                 if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+@@ -99,16 +102,16 @@
+                     try:
+                         befehl = getattr(self,'on_%s' % zeile[1])
+                         befehl(self._teile_zeile(zeile))
+-                    except AttributeError: # es gibt wohl keine on_EVENT Funktion f&#252;r das gefundene EVENT, also rufen wir den (optionalen) Handler daf&#252;r auf
++                    except AttributeError: # es gibt wohl keine on_EVENT Funktion f&#195;&#188;r das gefundene EVENT, also rufen wir den (optionalen) Handler daf&#195;&#188;r auf
+                         self.on_UNBEKANNT(self._teile_zeile(zeile))
+ 
+     def _teile_zeile(self, zeile):
+         ''' teilt reingehendes in ein Dictionary auf
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             zeile: eine reinkommende Zeile als Liste
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             Dictionary:
+                 ['quelle']['host'],['ident'],['nickname']: string
+                 ['event']: string
+@@ -134,14 +137,14 @@
+ 
+     def _teile_befehl(self,zeile):
+         '''teilt erkannte Befehle in ein Dictionary auf. Was ein Befehl ist, wird in on_PRIVMSG behandelt.
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             zeile: Dictionary:
+                 ['quelle']['host'],['ident'],['nickname']: string
+                 ['event']: string
+                 ['ziel']: string
+                 ['inhalt']: string
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             ['quelle']['host'],['ident'],['nick']: string
+             ['ziel']: string
+             ['befehl']: string
+@@ -170,22 +173,22 @@
+     def cmd_join(self, befehl):
+         '''betritt Channel
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             Dictionary:
+                 ['argumente']: liste
+ 
+         ruft auf:
+-            join f&#252;r jeden Eintrag in der liste ['argumente']'''
++            join f&#195;&#188;r jeden Eintrag in der liste ['argumente']'''
+         for channel in befehl['argumente']:
+             self.join(channel)
+ 
+     def cmd_say(self, befehl):
+         '''sagt etwas in einem Channel
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             befehl['argumente']: Liste
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+@@ -197,15 +200,15 @@
+     def cmd_die(self,befehl):
+         '''schaltet den Bot ab
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             befehl['quelle']['ident']: string
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+             quit mit einer Standardmessage, falls das Ident-Field stellt
+-            ansonsten gibts ne notice zur&#252;ck
++            ansonsten gibts ne notice zur&#195;&#188;ck
+         '''
+         if befehl['quelle']['ident'] == 'tiax':
+             #log
+@@ -217,10 +220,10 @@
+     def cmd_ping(self,befehl):
+         '''antwortet mit pong
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             befehl['ziel']: string
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+@@ -232,11 +235,11 @@
+             self.notice(befehl['quelle']['nickname'],'Pong')
+ 
+     def cmd_raw(self,befehl):
+-        '''l&#228;sst Rohdaten an den Server schicken, ist nat&#252;rlich mit Vorsicht zu genie&#223;en.
+-        erh&#228;lt:
++        '''l&#195;&#164;sst Rohdaten an den Server schicken, ist nat&#195;&#188;rlich mit Vorsicht zu genie&#195;&#159;en.
++        erh&#195;&#164;lt:
+             befehl[argumente] als Liste
+ 
+-        gibt zur&#252;ck:
++        gibt zur&#195;&#188;ck:
+             nichts
+ 
+         ruft auf:
+@@ -244,13 +247,20 @@
+         
+         self.rawsend(&quot; &quot;.join(befehl['argumente']))
+  
++    def cmd_parse(self,befehl):
++        '''parsed einen xwars-kampfbericht'''
++        url = befehl['argumente'][0]
++        kampfbericht = xwars.kampfbericht(url)
++        kampfbericht.analyze()
++        kampfbericht.manipulate()
++        kampfbericht.save()
++        self.msg(befehl['quelle']['nickname'],kampfbericht.dateiname)
+ 
+-
+-    # f&#252;r allen m&#246;glichen K&#228;se
++    # f&#195;&#188;r allen m&#195;&#182;glichen K&#195;&#164;se
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             rausgehendes: string'''
+         self.so.send('%s\r\n' % rausgehendes)
+ 
+@@ -259,7 +269,7 @@
+     def join(self,channel,key=''):
+         '''betritt Channel
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             channel: string
+             key: string (optional)
+ 
+@@ -272,7 +282,7 @@
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             ziel: string
+             nachricht: string
+ 
+@@ -285,7 +295,7 @@
+     def notice(self,ziel,nachricht):
+         '''schickt eine Nachricht als Notice raus
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             ziel: string
+             nachricht: string
+ 
+@@ -298,7 +308,7 @@
+     def quit(self,quitmessage):
+         '''macht den Bot aus
+ 
+-        erh&#228;lt:
++        erh&#195;&#164;lt:
+             quitmessage: string
+ 
+         ruft auf:
+@@ -319,7 +329,7 @@
+             self.currentnickname = self.nicknames.pop(0)
+         except IndexError:
+             #log
+-            exit('Nicknames sind ausgegangen')
++            sys.exit('Nicknames sind ausgegangen')
+         #log
+         self.rawsend('NICK %s' % self.currentnickname)
+ 
+@@ -347,4 +357,22 @@
+         pass
+ 
+ if __name__ == '__main__':
++    if &quot;--daemon&quot; in sys.argv:
++        # wir machen einen daemon
++        if not (os.fork()):
++            # eigene session erstellen
++            os.setsid()
++            sys.stdin.close()
++            sys.stdout = open('/home/tiax/daemonlog','w')
++            sys.stderr = sys.stdout
++            if not (os.fork()):
++                ppid = os.getppid()
++                while (ppid != 1):
++                    time.sleep(0.5)
++                    ppid = os.getppid()
++            else:
++                os._exit(0)
++        else:
++            os.wait()
++            sys.exit()
+     GameSurge = ircverbindung(('irc.eu.gamesurge.net',6667),['pwn','own','pwn0r'])
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000029.html">[Pwnbot-commits] r43 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000031.html">[Pwnbot-commits] r45 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#30">[ date ]</a>
+              <a href="thread.html#30">[ thread ]</a>
+              <a href="subject.html#30">[ subject ]</a>
+              <a href="author.html#30">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

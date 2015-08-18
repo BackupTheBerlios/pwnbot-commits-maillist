@@ -1,0 +1,463 @@
+From tiax at tiax.info  Tue Jul 12 15:00:57 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Tue, 12 Jul 2005 15:00:57 +0200
+Subject: [Pwnbot-commits] rev 13 - trunk
+Message-ID: <E1DsKNd-0001Bq-Qi@tiax.info>
+
+Author: tiax
+Date: 2005-07-12 14:56:34 +0200 (Tue, 12 Jul 2005)
+New Revision: 13
+
+Modified:
+   trunk/ircbot.py
+Log:
+der bot beendet sich jetzt, wenn die Verbindung selbst getrennt wurde oder er vom server gekillt worden ist, sollte auch aus andren anlaessen klappen. closes #5
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-11 22:19:53 UTC (rev 12)
++++ trunk/ircbot.py	2005-07-12 12:56:34 UTC (rev 13)
+@@ -43,7 +43,7 @@
+         print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
+         self.so.send('NICK %s\r\n' % nickname)
+         print 'DEBUG:  >> NICK %s' % nickname
+-        self.join('#tiax') # DEBBUG-REMOVEME
++        self.join('#the-dominion') # DEBBUG-REMOVEME
+         self._verarbeite_reingehendes()
+ 
+     def _verarbeite_reingehendes(self):
+@@ -97,20 +97,19 @@
+         self.rawsend('PRIVMSG %S :%s' % (ziel, nachricht))
+ 
+     def quit(self,quitmessage):
++        print 'DEBUG: <> Beende'
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
+     def on_001(self,*args):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+-        self.join('#tiax')
++        self.join('#the-dominion')
+ 
+     def on_PRIVMSG(self,*args):
+         '''bearbeitet eingehende Nachrichten'''
+         print args
+-        if 'die' in args:
+-            self.rawsend('quit')
+-        #if args[3].lstrip(':') == 'die':
+-        #    self.rawsend('quit')
++        if len(args[0]) >= 3 and args[0][3].lstrip(':') == 'die':
++            self.quit('diediedie')
+ 
+     def on_UNBEKANNT(self,*args):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+
+
+
+From tiax at tiax.info  Tue Jul 19 22:01:33 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Tue, 19 Jul 2005 22:01:33 +0200
+Subject: [Pwnbot-commits] rev 14 - trunk
+Message-ID: <E1DuyHV-0005UB-2S@tiax.info>
+
+Author: tiax
+Date: 2005-07-19 22:01:31 +0200 (Tue, 19 Jul 2005)
+New Revision: 14
+
+Modified:
+   trunk/ircbot.py
+Log:
+man kann jetzt statt einem string eine liste an nicknames ?\195?\188bergeben (obligatorisch) und statt einem tuple f?\195?\188r den server 
+auch einen string (fakultativ), closes #2
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-12 12:56:34 UTC (rev 13)
++++ trunk/ircbot.py	2005-07-19 20:01:31 UTC (rev 14)
+@@ -12,7 +12,7 @@
+ 
+ # was an modulen gebraucht wird.
+ import socket # f?r die IRC-Verbindung
+-
++from sys import exit
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k?mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+@@ -25,25 +25,31 @@
+         self.lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+         self.verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
++    ##### Grundlegendes
++
+     def verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her
+         erwartet:
+-        server als tuple serverurl,port
+-        nickname als string
++        server entweder als string (url) oder tuple (url, port)
++        nickname als liste von nicknames
+         ident als string
+         realname als string
+ 
+         gibt nix zur?ck aber stellt erst die Verbindung zum IRC-Server her und ruft dann den Verarbeiter auf'''
++        self.nicknames = nickname
++        nickname = self.nicknames.pop(0)
+         ident = ident or nickname
+         realname = realname or nickname
+         self.so = socket.socket()
+-        self.so.connect(server)
++        try:
++            self.so.connect(server)
++        except TypeError:
++            self.so = so.connect((server,6667))
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
+         self.so.send('NICK %s\r\n' % nickname)
+         print 'DEBUG:  >> NICK %s' % nickname
+-        self.join('#the-dominion') # DEBBUG-REMOVEME
+         self._verarbeite_reingehendes()
+ 
+     def _verarbeite_reingehendes(self):
+@@ -79,6 +85,7 @@
+                         befehl(zeile)
+                     except AttributeError:
+                         self.on_UNBEKANNT(zeile)
++
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -86,6 +93,8 @@
+         gibt auch nix zur?ck, erspart uns aber die l?stige Fehlersuche, wenn die Zeichen am Zeilenende vergessen worden sind.'''
+         self.so.send('%s\r\n' % rausgehendes)
+ 
++    ##### konkrete Befehle
++
+     def join(self,channel,key=''):
+         '''betritt Channel'''
+         print 'DEBUG: >> Joine %s' % channel
+@@ -101,6 +110,16 @@
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
++    ##### Events
++
++    def on_433(self,*args):
++        ''' der nickname ist bereits belegt'''
++        try:
++            neuernick = self.nicknames.pop(0)
++        except IndexError:
++            exit('Nicknames sind ausgegangen')
++        self.rawsend('NICK %s' % neuernick)
++
+     def on_001(self,*args):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+         self.join('#the-dominion')
+
+
+
+From tiax at tiax.info  Wed Jul 20 00:27:08 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Wed, 20 Jul 2005 00:27:08 +0200
+Subject: [Pwnbot-commits] rev 15 - trunk
+Message-ID: <E1Dv0YO-0001PH-Pp@tiax.info>
+
+Author: tiax
+Date: 2005-07-20 00:27:07 +0200 (Wed, 20 Jul 2005)
+New Revision: 15
+
+Modified:
+   trunk/ircbot.py
+Log:
+man muss nicht mehr unbedingt eine liste von nicknames eingeben (string reicht), das nicht-eingeben von tuples hatte nen fehler, das wurde behoben
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-19 20:01:31 UTC (rev 14)
++++ trunk/ircbot.py	2005-07-19 22:27:07 UTC (rev 15)
+@@ -13,6 +13,7 @@
+ # was an modulen gebraucht wird.
+ import socket # f?r die IRC-Verbindung
+ from sys import exit
++from types import ListType
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k?mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+@@ -36,7 +37,11 @@
+         realname als string
+ 
+         gibt nix zur?ck aber stellt erst die Verbindung zum IRC-Server her und ruft dann den Verarbeiter auf'''
+-        self.nicknames = nickname
++        self.nicknames = []
++        if type(nickname) != ListType:
++            self.nicknames.append(nickname)
++        else:
++            self.nicknames.extend(nickname)
+         nickname = self.nicknames.pop(0)
+         ident = ident or nickname
+         realname = realname or nickname
+@@ -44,7 +49,7 @@
+         try:
+             self.so.connect(server)
+         except TypeError:
+-            self.so = so.connect((server,6667))
++            self.so.connect((server,6667))
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
+@@ -122,7 +127,7 @@
+ 
+     def on_001(self,*args):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+-        self.join('#the-dominion')
++        self.join('#tiax')
+ 
+     def on_PRIVMSG(self,*args):
+         '''bearbeitet eingehende Nachrichten'''
+
+
+
+From tiax at tiax.info  Wed Jul 20 01:12:32 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Wed, 20 Jul 2005 01:12:32 +0200
+Subject: [Pwnbot-commits] rev 16 - trunk
+Message-ID: <E1Dv1GK-0000Ez-30@tiax.info>
+
+Author: tiax
+Date: 2005-07-20 01:12:30 +0200 (Wed, 20 Jul 2005)
+New Revision: 16
+
+Modified:
+   trunk/ircbot.py
+Log:
+eingehende Ereignisse werden jetzt an _chopit ?\195?\188bergeben und dort in ein dictionary (quelle, event, ziel und evtl. inhalt) aufgetielt. reagiert jetzt im channel 
+auch auf "ping". closes #7
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-19 22:27:07 UTC (rev 15)
++++ trunk/ircbot.py	2005-07-19 23:12:30 UTC (rev 16)
+@@ -86,11 +86,21 @@
+                 else:
+                     try:
+                         befehl = getattr(self,'on_%s' % zeile[1])
+-                        print 'DEBUG: %s wird aufgerufen' % befehl
+-                        befehl(zeile)
++                        befehl(self._chopit(zeile))
+                     except AttributeError:
+-                        self.on_UNBEKANNT(zeile)
++                        self.on_UNBEKANNT(self._chopit(zeile))
+ 
++    def _chopit(self, zeile):
++        ''' teilt reingehendes in ein Dictionary von Quelle, Event, Ziel und Inhalt auf'''
++        temp = {}
++        temp['quelle'] = zeile[0].lstrip(':')
++        temp['event'] = zeile[1]
++        temp['ziel'] = zeile[2]
++        if len(zeile) >= 4:
++            temp['inhalt'] = zeile[3:]
++            temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
++        return temp
++
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -107,8 +117,8 @@
+ 
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus'''
+-        print 'DEBUG: >> PRIVMSG an %s: %s' % (ziel, nachricht)
+-        self.rawsend('PRIVMSG %S :%s' % (ziel, nachricht))
++        print 'Nachricht an %s: %s' % (ziel, nachricht)
++        self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
+ 
+     def quit(self,quitmessage):
+         print 'DEBUG: <> Beende'
+@@ -117,7 +127,7 @@
+ 
+     ##### Events
+ 
+-    def on_433(self,*args):
++    def on_433(self,zeile):
+         ''' der nickname ist bereits belegt'''
+         try:
+             neuernick = self.nicknames.pop(0)
+@@ -125,16 +135,18 @@
+             exit('Nicknames sind ausgegangen')
+         self.rawsend('NICK %s' % neuernick)
+ 
+-    def on_001(self,*args):
++    def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+         self.join('#tiax')
+ 
+-    def on_PRIVMSG(self,*args):
++    def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+-        print args
+-        if len(args[0]) >= 3 and args[0][3].lstrip(':') == 'die':
++        if 'die' in zeile['inhalt']:
+             self.quit('diediedie')
++        elif 'ping' in zeile['inhalt']:
++            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle'])
++        print 'Nachricht von %s an %s: %s' % (zeile['quelle'], zeile['ziel'], zeile['inhalt'])
+ 
+-    def on_UNBEKANNT(self,*args):
++    def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+         pass
+
+
+
+From tiax at tiax.info  Fri Jul 22 16:18:50 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Fri, 22 Jul 2005 16:18:50 +0200
+Subject: [Pwnbot-commits] rev 17 - trunk
+Message-ID: <E1DvyMU-0003IP-AC@tiax.info>
+
+Author: tiax
+Date: 2005-07-22 16:18:47 +0200 (Fri, 22 Jul 2005)
+New Revision: 17
+
+Modified:
+   trunk/ircbot.py
+Log:
+Als 'quelle' wird jetzt nicht nur ein string sondern ein dictionary mit 
+Nick, Ident und Host zur?\195?\188ck gegeben, closes #10
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-19 23:12:30 UTC (rev 16)
++++ trunk/ircbot.py	2005-07-22 14:18:47 UTC (rev 17)
+@@ -42,7 +42,7 @@
+             self.nicknames.append(nickname)
+         else:
+             self.nicknames.extend(nickname)
+-        nickname = self.nicknames.pop(0)
++        self.currentnickname = self.nicknames.pop(0)
+         ident = ident or nickname
+         realname = realname or nickname
+         self.so = socket.socket()
+@@ -53,8 +53,8 @@
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
+-        self.so.send('NICK %s\r\n' % nickname)
+-        print 'DEBUG:  >> NICK %s' % nickname
++        self.so.send('NICK %s\r\n' % self.currentnickname)
++        print 'DEBUG:  >> NICK %s' % self.currentnickname
+         self._verarbeite_reingehendes()
+ 
+     def _verarbeite_reingehendes(self):
+@@ -93,7 +93,13 @@
+     def _chopit(self, zeile):
+         ''' teilt reingehendes in ein Dictionary von Quelle, Event, Ziel und Inhalt auf'''
+         temp = {}
+-        temp['quelle'] = zeile[0].lstrip(':')
++        temp['quelle'] = {}
++        if '@' in zeile[0]:
++            temp['quelle']['nickname'] = zeile[0].split('!')[0].lstrip(':')
++            temp['quelle']['ident'] = zeile[0].split('@')[0].split('!')[1]
++            temp['quelle']['host'] = zeile[0].split('@')[1]
++        else:
++            temp['quelle']['nickname'], temp['quelle']['ident'], temp['quelle']['host'] = 'none','none','none'
+         temp['event'] = zeile[1]
+         temp['ziel'] = zeile[2]
+         if len(zeile) >= 4:
+@@ -127,25 +133,33 @@
+ 
+     ##### Events
+ 
++    ## Numerics
++    
+     def on_433(self,zeile):
+-        ''' der nickname ist bereits belegt'''
++        ''' der nickname ist bereits belegt
++        wir holen jetzt weitere nicks aus der anfangs erstellten Liste. Falls die leer wird, beenden wir den Bot'''
+         try:
+-            neuernick = self.nicknames.pop(0)
++            self.currentnickname = self.nicknames.pop(0)
+         except IndexError:
+             exit('Nicknames sind ausgegangen')
+-        self.rawsend('NICK %s' % neuernick)
++        self.rawsend('NICK %s' % self.currentnickname)
+ 
+     def on_001(self,zeile):
+-        '''die IRC Verbindung ist gerade hergestellt worden'''
++        '''die IRC Verbindung ist gerade hergestellt worden
++        Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
+         self.join('#tiax')
+ 
++    ## Textevents
++    
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
++        # DEBUG
+         if 'die' in zeile['inhalt']:
+             self.quit('diediedie')
+         elif 'ping' in zeile['inhalt']:
+-            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle'])
+-        print 'Nachricht von %s an %s: %s' % (zeile['quelle'], zeile['ziel'], zeile['inhalt'])
++            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle']['nickname'])
++        print 'Nachricht von %s an %s: %s' % (zeile['quelle']['nickname'], zeile['ziel'], zeile['inhalt'])
++        # Ende DEBUG
+ 
+     def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+
+
+
+From tiax at tiax.info  Mon Jul 25 14:08:53 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Mon, 25 Jul 2005 14:08:53 +0200
+Subject: [Pwnbot-commits] rev 18 - branches
+Message-ID: <E1Dx1lN-0004wB-3C@tiax.info>
+
+Author: tiax
+Date: 2005-07-25 14:08:49 +0200 (Mon, 25 Jul 2005)
+New Revision: 18
+
+Removed:
+   branches/select/
+Log:
+?\195?\188bersch?\195?\188ssigen Branch gel?\195?\182scht
+
+
+
+From tiax at tiax.info  Thu Jul 28 20:02:28 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Thu, 28 Jul 2005 20:02:28 +0200
+Subject: [Pwnbot-commits] rev 19 - trunk
+Message-ID: <E1DyCiC-0005XI-3q@tiax.info>
+
+Author: tiax
+Date: 2005-07-28 20:02:22 +0200 (Thu, 28 Jul 2005)
+New Revision: 19
+
+Modified:
+   trunk/ircbot.py
+Log:
+unn?\195?\182tige variable entfernt
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-25 12:08:49 UTC (rev 18)
++++ trunk/ircbot.py	2005-07-28 18:02:22 UTC (rev 19)
+@@ -69,7 +69,7 @@
+         while 1:
+             try:
+                 self.lesebuffer = self.so.recv(8192)
+-            except socket.error, x:
++            except socket.error:
+                 print "DEBUG: <> Verbindung geschlossen"
+                 break
+             if len(self.lesebuffer) == 0:
+
+
+

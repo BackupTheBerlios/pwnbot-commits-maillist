@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 24 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2024%20-%20trunk&In-Reply-To=%3CE1E8StI-0007ZB-VD%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000010.html">
+   <LINK REL="Next"  HREF="000012.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 24 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2024%20-%20trunk&In-Reply-To=%3CE1E8StI-0007ZB-VD%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 24 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Fri Aug 26 03:20:21 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000010.html">[Pwnbot-commits] rev 23 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000012.html">[Pwnbot-commits] rev 25 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-08-26 03:20:17 +0200 (Fri, 26 Aug 2005)
+New Revision: 24
+
+Modified:
+   trunk/ircbot.py
+Log:
+kleinere probleme mit dem repo, jetzt solved
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-26 01:08:11 UTC (rev 23)
++++ trunk/ircbot.py	2005-08-26 01:20:17 UTC (rev 24)
+@@ -112,6 +112,7 @@
+             temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
+         return temp
+ 
++&lt;&lt;&lt;&lt;&lt;&lt;&lt; .mine
+     def _teile_befehl(self,zeile):
+         '''teilt Befehle in ein Dictionary auf:
+         befehl['quelle']['host'],['ident'],['nick']
+@@ -130,6 +131,34 @@
+         befehl['befehl'] = zeile['inhalt'][0]
+         befehl['argumente'] = zeile['inhalt'][1:]
+         print 'DEBUG: &lt;&lt; Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
++        if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'): #sicherheitscheck eventuell unn&#252;tz?
++            try:
++                temp = getattr(self,'cmd_%s' % befehl['befehl'])
++                temp(befehl)
++            except AttributeError:
++                self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++        else:
++            self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++
++=======
++    def _teile_befehl(self,zeile):
++        '''teilt Befehle in ein Dictionary auf:
++        befehl['quelle']['host'],['ident'],['nick']
++        befehl['ziel']
++        befehl['befehl']
++        befehl['argumente']
++
++        '''
++        befehl = {}
++        befehl['quelle'] = zeile['quelle']
++        befehl['ziel'] = zeile['ziel']
++        if zeile['inhalt'][0].startswith(self.currentnickname):
++            zeile['inhalt'].reverse()
++            zeile['inhalt'].pop()
++            zeile['inhalt'].reverse()
++        befehl['befehl'] = zeile['inhalt'][0]
++        befehl['argumente'] = zeile['inhalt'][1:]
++        print 'DEBUG: &lt;&lt; Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
+         if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'):
+             try:
+                 temp = getattr(self,befehl['befehl'])
+@@ -139,6 +168,7 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
++&gt;&gt;&gt;&gt;&gt;&gt;&gt; .r23
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -200,4 +230,4 @@
+ 
+     def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+-        pass
++        pass
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000010.html">[Pwnbot-commits] rev 23 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000012.html">[Pwnbot-commits] rev 25 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 15 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2015%20-%20trunk&In-Reply-To=%3CE1Dv0YO-0001PH-Pp%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000001.html">
+   <LINK REL="Next"  HREF="000003.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 15 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2015%20-%20trunk&In-Reply-To=%3CE1Dv0YO-0001PH-Pp%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 15 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Wed Jul 20 00:27:08 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000001.html">[Pwnbot-commits] rev 14 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000003.html">[Pwnbot-commits] rev 16 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-07-20 00:27:07 +0200 (Wed, 20 Jul 2005)
+New Revision: 15
+
+Modified:
+   trunk/ircbot.py
+Log:
+man muss nicht mehr unbedingt eine liste von nicknames eingeben (string reicht), das nicht-eingeben von tuples hatte nen fehler, das wurde behoben
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-19 20:01:31 UTC (rev 14)
++++ trunk/ircbot.py	2005-07-19 22:27:07 UTC (rev 15)
+@@ -13,6 +13,7 @@
+ # was an modulen gebraucht wird.
+ import socket # f&#252;r die IRC-Verbindung
+ from sys import exit
++from types import ListType
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k&#252;mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+@@ -36,7 +37,11 @@
+         realname als string
+ 
+         gibt nix zur&#252;ck aber stellt erst die Verbindung zum IRC-Server her und ruft dann den Verarbeiter auf'''
+-        self.nicknames = nickname
++        self.nicknames = []
++        if type(nickname) != ListType:
++            self.nicknames.append(nickname)
++        else:
++            self.nicknames.extend(nickname)
+         nickname = self.nicknames.pop(0)
+         ident = ident or nickname
+         realname = realname or nickname
+@@ -44,7 +49,7 @@
+         try:
+             self.so.connect(server)
+         except TypeError:
+-            self.so = so.connect((server,6667))
++            self.so.connect((server,6667))
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         print 'DEBUG:  &gt;&gt; USER %s * * :%s' % (ident, realname)
+@@ -122,7 +127,7 @@
+ 
+     def on_001(self,*args):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+-        self.join('#the-dominion')
++        self.join('#tiax')
+ 
+     def on_PRIVMSG(self,*args):
+         '''bearbeitet eingehende Nachrichten'''
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000001.html">[Pwnbot-commits] rev 14 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000003.html">[Pwnbot-commits] rev 16 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

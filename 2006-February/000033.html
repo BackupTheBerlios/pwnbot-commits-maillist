@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r47 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r47%20-%20trunk&In-Reply-To=%3C200602141033.k1EAXQxo030020%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000032.html">
+   <LINK REL="Next"  HREF="000034.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r47 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r47%20-%20trunk&In-Reply-To=%3C200602141033.k1EAXQxo030020%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r47 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Tue Feb 14 11:33:26 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000032.html">[Pwnbot-commits] r46 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000034.html">[Pwnbot-commits] r48 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-14 11:33:26 +0100 (Tue, 14 Feb 2006)
+New Revision: 47
+
+Modified:
+   trunk/xwars.py
+Log:
+kbs per regexp ?\195?\188berpr?\195?\188fen
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-14 10:29:22 UTC (rev 46)
++++ trunk/xwars.py	2006-02-14 10:33:26 UTC (rev 47)
+@@ -44,15 +44,16 @@
+ 
+     def _get_id(self):
+         '''&#252;berpr&#252;ft kampfbericht-urls auf ihre g&#252;ltigkeit'''
+-        
++        urlregexp = compile('http:\/\/reports.xwars.gamigo.de/.*id=(.*)\.html')
+         if not self.url.startswith(self.urlstart): # kleiner Schutz gegen allzugro&#223;en Unfug
+             raise IOError('Ung&#252;ltiger Server')
+-        if not (self.url.split('=')[1].startswith('combat') \
+-            and self.url.split('=')[1].endswith('.html')):
+-            raise IOError('Ug&#252;ltige ID')
+-        else:
+-            self.id =  self.url.split('=')[1].rstrip('.html')
+-
++        try:
++            self.id = urlregexp.search(self.url).groups()[0]
++        except AttributeError:
++            raise IOError('Ung&#252;ltige URL')
++        if not self.id:
++            raise IOError('Ung&#252;ltige URL')
++        
+     def _get_kb(self):
+         '''holt den kampfbericht hervor 
+         &#252;berpr&#252;ft zun&#228;chst, ob er vielleicht bereits abgerufen worden ist
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000032.html">[Pwnbot-commits] r46 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000034.html">[Pwnbot-commits] r48 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

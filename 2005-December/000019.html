@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 32 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2032%20-%20trunk&In-Reply-To=%3CE1EiIH6-0005Gi-B2%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000018.html">
+   <LINK REL="Next"  HREF="000020.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 32 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2032%20-%20trunk&In-Reply-To=%3CE1EiIH6-0005Gi-B2%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 32 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Fri Dec  2 22:17:00 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000018.html">[Pwnbot-commits] rev 31 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000020.html">[Pwnbot-commits] r34 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-12-02 22:16:54 +0100 (Fri, 02 Dec 2005)
+New Revision: 32
+
+Modified:
+   trunk/ircbot.py
+Log:
+logging umgestellt, kleinere korrekturen
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-12-01 23:57:03 UTC (rev 31)
++++ trunk/ircbot.py	2005-12-02 21:16:54 UTC (rev 32)
+@@ -16,7 +16,6 @@
+ # was an modulen gebraucht wird.
+ import socket # f&#252;r die IRC-Verbindung
+ from sys import exit
+-from types import ListType
+ from log import EinzelDateiLogger
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k&#252;mmert sich um
+@@ -49,13 +48,15 @@
+             _verarbeite_reingehendes
+         '''
+         self.nicknames = []
+-        if type(nickname) != ListType: # Nicknames brauchen wir immer als Liste - falls einer davon belegt ist
++        if type(nickname) != type([]): # Nicknames brauchen wir immer als Liste - falls einer davon belegt ist
+             self.nicknames.append(nickname)
+         else:
+             self.nicknames.extend(nickname)
+         self.currentnickname = self.nicknames.pop(0)
+         ident = ident or self.currentnickname # ident und realname sind nicht so wichtig
+         realname = realname or self.currentnickname # falls keine festgelegt sind, brauchen wir aber _irgendwelche_
++        # ident und nickname werden in Zukunft auch gar nicht mehr gebraucht,
++        # deswegen werden wir dafuer auch jetzt keine Attribute erstellen
+         self.so = socket.socket()
+         try:
+             self.so.connect(server)
+@@ -63,7 +64,7 @@
+             self.so.connect((server,6667))
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         self.so.send('NICK %s\r\n' % self.currentnickname)
+-        self._verarbeite_reingehendes()
++        self._verarbeite_reingehendes() # Die Verbindung sollte hergestellt sein. Wir brauchen einen Loop der aus dem Buffer liest und verarbeitet
+ 
+     def _verarbeite_reingehendes(self):
+         '''liest den Buffer aus und verteilt das Reingehende auf die Funktionen
+@@ -107,7 +108,7 @@
+         ''' teilt reingehendes in ein Dictionary auf
+ 
+         erh&#228;lt:
+-            zeile: liste
++            zeile: eine reinkommende Zeile als Liste
+ 
+         gibt zur&#252;ck:
+             Dictionary:
+@@ -159,11 +160,11 @@
+         befehl['argumente'] = zeile['inhalt'][1:]
+         try:
+             temp = getattr(self,'cmd_%s' % befehl['befehl'])
++            self.logger.log('Befehl','Befehl von %s: %s' % (befehl['quelle']['nickname'],&quot; &quot;.join([befehl['befehl'],&quot; &quot;.join(befehl['argumente'])])))
+             temp(befehl)
+-            self.logger.log('Befehl','Befehl von %s: %s' % (befehl['quelle']['nickname'],&quot; &quot;.join([befehl['befehl'],&quot; &quot;.join(befehl['argumente'])])))
+         except AttributeError: # keine Funktion mit cmd_BEFEHL gefunden.
++            self.logger.log('Fehler','Befehl von %s nicht gefunden: %s' % (befehl['quelle']['nickname'],&quot; &quot;.join([befehl['befehl'],&quot; &quot;.join(befehl['argumente'])])))
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+-            self.logger.log('Fehler','Befehl von %s nicht gefunden: %s' % (befehl['quelle']['nickname'],&quot; &quot;.join([befehl['befehl'],&quot; &quot;.join(befehl['argumente'])])))
+ 
+     # Befehlshandler
+     def cmd_join(self, befehl):
+@@ -249,8 +250,8 @@
+ 
+         erh&#228;lt:
+             rausgehendes: string'''
++        self.logger.log('Rausgehend','Raw: %s' % rausgehendes)
+         self.so.send('%s\r\n' % rausgehendes)
+-        self.logger.log('Rausgehend','Raw: %s' % rausgehendes)
+ 
+     # konkrete Befehle
+ 
+@@ -277,8 +278,8 @@
+         ruft auf:
+             rawsend
+         '''
++        self.logger.log('Rausgehendes','Message an %s: %s' % (ziel,nachricht))
+         self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
+-        self.logger.log('Rausgehendes','Message an %s: %s' % (ziel,nachricht))
+ 
+     def notice(self,ziel,nachricht):
+         '''schickt eine Nachricht als Notice raus
+@@ -290,8 +291,8 @@
+         ruft auf:
+             rawsend
+         '''
++        self.logger.log('Rausgehendes','Notice an %s: %s' % (ziel,nachricht))
+         self.rawsend('NOTICE %s :%s' % (ziel,nachricht))
+-        self.logger.log('Rausgehendes','Notice an %s: %s' % (ziel,nachricht))
+ 
+     def quit(self,quitmessage):
+         '''macht den Bot aus
+@@ -318,7 +319,7 @@
+         except IndexError:
+             self.logger.log('Verbindung','Nickname bereits belegt, alle Nicks sind ausgegangen')
+             exit('Nicknames sind ausgegangen')
+-            self.logger.log('Verbindng','Nickname war bereits belegt, %s wird versucht' % self.currentnickname)
++        self.logger.log('Verbindng','Nickname war bereits belegt, %s wird versucht' % self.currentnickname)
+         self.rawsend('NICK %s' % self.currentnickname)
+ 
+     def on_001(self,zeile):
+@@ -332,9 +333,9 @@
+ 
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
++        self.logger.log('Nachricht','%s &lt;%s!%s@%s&gt; %s' % (zeile['ziel'],zeile['quelle']['nickname'],zeile['quelle']['ident'],zeile['quelle']['host'],&quot; &quot;.join(zeile['inhalt'])))
+         if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
+             self._teile_befehl(zeile)
+-        self.logger.log('Nachricht','%s &lt;%s!%s@%s&gt; %s' % (zeile['ziel'],zeile['quelle']['nickname'],zeile['quelle']['ident'],zeile['quelle']['host'],&quot; &quot;.join(zeile['inhalt'])))
+         # Ende DEBUG
+ 
+     def on_UNBEKANNT(self,zeile):
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000018.html">[Pwnbot-commits] rev 31 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000020.html">[Pwnbot-commits] r34 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

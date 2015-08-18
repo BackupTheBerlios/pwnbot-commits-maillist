@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r53 - branches/recodemitclasses
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r53%20-%20branches/recodemitclasses&In-Reply-To=%3C200603120231.k2C2VBID020566%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000038.html">
+   <LINK REL="Next"  HREF="000040.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r53 - branches/recodemitclasses</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r53%20-%20branches/recodemitclasses&In-Reply-To=%3C200603120231.k2C2VBID020566%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r53 - branches/recodemitclasses">tiax at berlios.de
+       </A><BR>
+    <I>Sun Mar 12 03:31:11 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000038.html">[Pwnbot-commits] r52 - branches/recodemitclasses
+</A></li>
+        <LI>Next message: <A HREF="000040.html">[Pwnbot-commits] r54 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-03-12 03:31:05 +0100 (Sun, 12 Mar 2006)
+New Revision: 53
+
+Modified:
+   branches/recodemitclasses/befehle.py
+Log:
+kleine bugs behoben
+
+Modified: branches/recodemitclasses/befehle.py
+===================================================================
+--- branches/recodemitclasses/befehle.py	2006-03-11 19:31:51 UTC (rev 52)
++++ branches/recodemitclasses/befehle.py	2006-03-12 02:31:05 UTC (rev 53)
+@@ -2,11 +2,11 @@
+ # -*- coding: utf-8 -*-
+ import xwars
+ import logging
+-
++&#1421;
+ logger = logging.getLogger('plugins')
+ 
+ def _checkfortiax(event):
+-    return event.quelle['ident'] == 'tiax' and event.quelle['host'] == 'victory-is-life.de'
++    return event.quelle['ident'] == 'tiax' and event.quelle['host'] == 'tiax.support.xwars'
+ def quit(event):
+     if _checkfortiax(event):
+         event.parent.quit('Shutdown: %s' % ' '.join(event.befehl['argumente']))
+@@ -41,9 +41,9 @@
+             try:
+                 kampfbericht.analyze()
+             except (IOError), meldung:
+-                self.notice(event.quelle['nick'],meldung)
++                event.parent.notice(event.quelle['nick'],meldung)
+             except AttributeError:
+-                self.notice(event.quelle['nick'],'Ung&#252;ltige URL')
++                event.parent.notice(event.quelle['nick'],'Ung&#252;ltige URL')
+             else:
+                 kampfbericht.manipulate()
+                 kampfbericht.save()
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000038.html">[Pwnbot-commits] r52 - branches/recodemitclasses
+</A></li>
+	<LI>Next message: <A HREF="000040.html">[Pwnbot-commits] r54 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

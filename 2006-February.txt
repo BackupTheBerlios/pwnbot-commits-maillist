@@ -1,0 +1,1968 @@
+From tiax at berlios.de  Tue Feb  7 23:46:18 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Tue, 7 Feb 2006 23:46:18 +0100
+Subject: [Pwnbot-commits] r36 - trunk
+Message-ID: <200602072246.k17MkI03002175@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-07 23:46:17 +0100 (Tue, 07 Feb 2006)
+New Revision: 36
+
+Added:
+   trunk/xwars.py
+Log:
+xwarsscript hinzugef?\195?\188gt
+
+Added: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2005-12-30 23:25:15 UTC (rev 35)
++++ trunk/xwars.py	2006-02-07 22:46:17 UTC (rev 36)
+@@ -0,0 +1,103 @@
++#!/usr/bin/env python
++# -*- coding: utf-8 -*-
++
++from urllib import urlopen
++from os import path
++from gzip import GzipFile
++from re import compile
++
++# Konfiguration
++# Mit was soll die URl anfangen?
++urlstart = 'http://reports.xwars.gamigo.de/'
++cachedir = '/home/tiax/xwars/cache/'
++savedir = '/home/tiax/xwars/save/'
++
++class kampfbericht:
++    def __init__(self,url):
++        if not path.isdir(cachedir):
++            raise IOError('Cachedir existiert nicht')
++        if not path.isdir(savedir):
++            raise IOError('Savedir existiert nicht')
++        self.url = url    
++        self._get_id()
++        self._get_kb()
++
++    def _get_id(self):
++        '''?berpr?ft kampfbericht-urls auf ihre g?ltigkeit
++
++        gets: url/string
++        returns: kampfberichtid/string'''
++        
++        if not self.url.startswith(urlstart):
++            raise IOError('Ung?ltiger Server')
++        if not (self.url.split('=')[1].startswith('combat') and self.url.split('=')[1].endswith('.html')):
++            raise IOError('Ug?ltige ID')
++        else:
++            self.id =  self.url.split('=')[1].rstrip('.html')
++
++    def _get_kb(self):
++        '''holt den kampfbericht hervor 
++        ?berpr?ft zun?chst, ob er vielleicht bereits abgerufen worden ist und l?dt dann aus dem cache'''
++        if path.isfile(cachedir + self.id):
++            self.bericht = GzipFile(cachedir + self.id,'r').read()
++        else:
++            bericht = urlopen('%(urlstart)s?id=%(berichtid)s.html' % {'urlstart':urlstart,'berichtid':self.id}).read()
++            cachedatei = GzipFile(cachedir + self.id,'w')
++            cachedatei.write(bericht)
++            cachedatei.close()
++            self.bericht =  bericht
++
++    def _get_namestring(self,wessen='Startbasis'):
++        berichtliste = self.bericht.splitlines()
++        for zeile in berichtliste:
++            if wessen in zeile:
++                return zeile.split('&nbsp;')[2].replace('von ','')
++
++    def _get_name(self,):
++        self.basis = {}
++        if len(self._get_namestring(wessen).split()) == 2:
++            self.basis['Startbasis'] = self._get_namestring('Startbasis').split()[1]
++            self.basis['Zielbasis'] = self._get_namestring('Zielbasis').split()[1]
++        else:
++            self.basis['Startbasis'] = self._get_namestring('Startbasis')
++            self.basis['Zielbasis'] = self._get_namestring('Zielbasis')
++            
++    def _get_koords(self,):
++        berichtliste = self.bericht.splitlines()
++        self.koords = {}
++        for zeile in berichtliste:
++            if 'Startbasis' in zeile:
++                self.koords['Startbasis'] = zeile.split('<b>')[1].split('</b>')[0].strip()
++            elif 'Zielbasis' in zeile:
++                self.koords['Zielbasis'] = zeile.split('<b>')[1].split('</b>')[0].strip().split()[1]
++
++    def _get_alli(self,):
++        self.alli = {}
++        if len(self._get_namestring(wessen).split()) == 2:
++            self.alli['Startbasis'] =  self._get_namestring('Startbasis').split()[0]
++            self.alli['Zielbasis'] = self._get_namestring('Zielbasis').split()[0]
++
++    def _get_werte(self):
++        berichtliste = self.bericht.splitlines()
++        #flottensplit = lambda x: for item in x.strip().split(o'/')): 
++        flottensplit = lambda x: tuple([int(y) for y in x.strip().split('/')])
++        checkforempty = lambda x: x or ('0/0 ')
++        self.flotten = []
++        for zeile in berichtliste:
++            if 'debug:' in zeile:
++                self.flotten.append(zeile.split('<br>')[1].replace('org: ','').replace('</td>','').lstrip().split('surv:'))
++       # Angreifer haben nur eine Flotte
++        self.werte = {'StartbasisVorher':flottensplit(self.flotten[0][0]),'StartbasisNachher':flottensplit(checkforempty(self.flotten[0][1]))}
++        self.flotten.pop(0)
++        # Verteidiger sind demnach der ganze Rest
++        
++
++    def manipulate(self):
++        koordinaten = compile('[0-9]{1,2}x[0-9]{1,3}x[0-9]{1,3}')
++        kb_ohne_koords = koordinaten.sub('',self.bericht)
++        kb_viel_h?bscher = kb_ohne_koords.replace('auf Planet','auf einem Planeten').replace('Login','The Dominion').replace('Planetare Verteidigung auf','Planetare Verteidigug')
++        self.bericht = kb_viel_h?bscher
++
++    def save(self):
++        berichtdatei = open(savedir + self.id,'w')
++        berichtdatei.write(self.bericht)
+
+
+
+From tiax at berlios.de  Wed Feb  8 01:48:21 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Wed, 8 Feb 2006 01:48:21 +0100
+Subject: [Pwnbot-commits] r37 - trunk
+Message-ID: <200602080048.k180mLUA017092@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-08 01:48:13 +0100 (Wed, 08 Feb 2006)
+New Revision: 37
+
+Modified:
+   trunk/xwars.py
+Log:
+berechnungen klappen
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-07 22:46:17 UTC (rev 36)
++++ trunk/xwars.py	2006-02-08 00:48:13 UTC (rev 37)
+@@ -4,13 +4,13 @@
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+-from re import compile
++import re
+ 
+ # Konfiguration
+ # Mit was soll die URl anfangen?
+ urlstart = 'http://reports.xwars.gamigo.de/'
+-cachedir = '/home/tiax/xwars/cache/'
+-savedir = '/home/tiax/xwars/save/'
++cachedir = '/home/tiax/xwars/parser/cache/'
++savedir = '/home/tiax/xwars/parser/save/'
+ 
+ class kampfbericht:
+     def __init__(self,url):
+@@ -18,6 +18,8 @@
+             raise IOError('Cachedir existiert nicht')
+         if not path.isdir(savedir):
+             raise IOError('Savedir existiert nicht')
++        self.startbasis = {}
++        self.zielbasis = {}
+         self.url = url    
+         self._get_id()
+         self._get_kb()
+@@ -47,57 +49,40 @@
+             cachedatei.close()
+             self.bericht =  bericht
+ 
+-    def _get_namestring(self,wessen='Startbasis'):
+-        berichtliste = self.bericht.splitlines()
+-        for zeile in berichtliste:
+-            if wessen in zeile:
+-                return zeile.split('&nbsp;')[2].replace('von ','')
+-
+-    def _get_name(self,):
+-        self.basis = {}
+-        if len(self._get_namestring(wessen).split()) == 2:
+-            self.basis['Startbasis'] = self._get_namestring('Startbasis').split()[1]
+-            self.basis['Zielbasis'] = self._get_namestring('Zielbasis').split()[1]
+-        else:
+-            self.basis['Startbasis'] = self._get_namestring('Startbasis')
+-            self.basis['Zielbasis'] = self._get_namestring('Zielbasis')
+-            
+-    def _get_koords(self,):
+-        berichtliste = self.bericht.splitlines()
+-        self.koords = {}
+-        for zeile in berichtliste:
+-            if 'Startbasis' in zeile:
+-                self.koords['Startbasis'] = zeile.split('<b>')[1].split('</b>')[0].strip()
+-            elif 'Zielbasis' in zeile:
+-                self.koords['Zielbasis'] = zeile.split('<b>')[1].split('</b>')[0].strip().split()[1]
+-
+-    def _get_alli(self,):
+-        self.alli = {}
+-        if len(self._get_namestring(wessen).split()) == 2:
+-            self.alli['Startbasis'] =  self._get_namestring('Startbasis').split()[0]
+-            self.alli['Zielbasis'] = self._get_namestring('Zielbasis').split()[0]
+-
++    def _get_daten(self):
++        startregexp = re.compile(r'Startbasis <b> (.+)</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
++        zielregexp = re.compile(r'Zielbasis <b> (.+)</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
++        self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
++        self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
++        
+     def _get_werte(self):
+-        berichtliste = self.bericht.splitlines()
+-        #flottensplit = lambda x: for item in x.strip().split(o'/')): 
+-        flottensplit = lambda x: tuple([int(y) for y in x.strip().split('/')])
+-        checkforempty = lambda x: x or ('0/0 ')
+-        self.flotten = []
+-        for zeile in berichtliste:
+-            if 'debug:' in zeile:
+-                self.flotten.append(zeile.split('<br>')[1].replace('org: ','').replace('</td>','').lstrip().split('surv:'))
+-       # Angreifer haben nur eine Flotte
+-        self.werte = {'StartbasisVorher':flottensplit(self.flotten[0][0]),'StartbasisNachher':flottensplit(checkforempty(self.flotten[0][1]))}
+-        self.flotten.pop(0)
+-        # Verteidiger sind demnach der ganze Rest
++        flottenregexp = re.compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
++        flotten = flottenregexp.findall(self.bericht)
++        # Angreifer haben nur eine Flotte und sind schnell erledigt
++        # self.startbasis['Flotte'] = flotten.pop(0)
++        templiste = []
++        for item in flotten.pop(0):
++            templiste.append(int((item or 0)))
++        self.startbasis['Flotte'] = tuple(templiste)
++        self.startbasis['MP'] = (self.startbasis['Flotte'][0] + self.startbasis['Flotte'][1]) / 200.0
++        # Verteidiger haben mehrere + Defense aber das z?hlen wir alles zusammen
++        AttVorher, DefVorher, AttNachher, DefNachher = 0,0,0,0
++        for item in flotten:
++            AttVorher += int((item[0]) or 0)
++            DefVorher += int((item[1]) or 0)
++            AttNachher += int((item[2]) or 0)
++            DefNachher += int((item[3]) or 0)
++        self.zielbasis['Flotte'] = (AttVorher, DefVorher, AttNachher, DefNachher)
++        self.zielbasis['MP'] = (AttVorher + DefVorher) / 200.0
+         
++    def _get_verluste(self):
++        StartbasisVerluste = (abs(self.startbasis['Flotte'][0] - self.startbasis['Flotte'][2]), abs(self.startbasis['Flotte'][1] - self.startbasis['Flotte'][3]))
++        ZielbasisVerluste = (abs(self.zielbasis['Flotte'][0] - self.zielbasis['Flotte'][2]), abs(self.zielbasis['Flotte'][1] - self.zielbasis['Flotte'][3]))
++        self.startbasis['Verluste'] = StartbasisVerluste
++        self.zielbasis['Verluste'] = ZielbasisVerluste
++        self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200
++        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200 
+ 
+-    def manipulate(self):
+-        koordinaten = compile('[0-9]{1,2}x[0-9]{1,3}x[0-9]{1,3}')
+-        kb_ohne_koords = koordinaten.sub('',self.bericht)
+-        kb_viel_h?bscher = kb_ohne_koords.replace('auf Planet','auf einem Planeten').replace('Login','The Dominion').replace('Planetare Verteidigung auf','Planetare Verteidigug')
+-        self.bericht = kb_viel_h?bscher
+-
+     def save(self):
+         berichtdatei = open(savedir + self.id,'w')
+         berichtdatei.write(self.bericht)
+
+
+
+From tiax at berlios.de  Wed Feb  8 02:08:12 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Wed, 8 Feb 2006 02:08:12 +0100
+Subject: [Pwnbot-commits] r38 - trunk
+Message-ID: <200602080108.k1818Cmg021659@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-08 02:08:04 +0100 (Wed, 08 Feb 2006)
+New Revision: 38
+
+Modified:
+   trunk/xwars.py
+Log:
+zeit wird erkannt
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-08 00:48:13 UTC (rev 37)
++++ trunk/xwars.py	2006-02-08 01:08:04 UTC (rev 38)
+@@ -4,7 +4,8 @@
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+-import re
++from time import strptime
++from re import compile
+ 
+ # Konfiguration
+ # Mit was soll die URl anfangen?
+@@ -50,13 +51,15 @@
+             self.bericht =  bericht
+ 
+     def _get_daten(self):
+-        startregexp = re.compile(r'Startbasis <b> (.+)</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
+-        zielregexp = re.compile(r'Zielbasis <b> (.+)</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
++        startregexp = compile(r'Startbasis <b> (.+)</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
++        zielregexp = compile(r'Zielbasis <b> (.+)</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
++        uhrzeitregexp = compile(r'Zeit <b>(\d+.\d+.\d+) (\d+:\d+:\d+.*)</b>')
+         self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
+         self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
++        self.zeit = strptime(" ".join(uhrzeitregexp.search(self.bericht).groups()), '%d.%m.%Y %H:%M:%S')
+         
+     def _get_werte(self):
+-        flottenregexp = re.compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
++        flottenregexp = compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
+         flotten = flottenregexp.findall(self.bericht)
+         # Angreifer haben nur eine Flotte und sind schnell erledigt
+         # self.startbasis['Flotte'] = flotten.pop(0)
+@@ -81,7 +84,7 @@
+         self.startbasis['Verluste'] = StartbasisVerluste
+         self.zielbasis['Verluste'] = ZielbasisVerluste
+         self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200
+-        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200 
++        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200
+ 
+     def save(self):
+         berichtdatei = open(savedir + self.id,'w')
+
+
+
+From tiax at berlios.de  Thu Feb  9 12:39:39 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 9 Feb 2006 12:39:39 +0100
+Subject: [Pwnbot-commits] r39 - trunk
+Message-ID: <200602091139.k19Bddhk012077@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-09 12:39:36 +0100 (Thu, 09 Feb 2006)
+New Revision: 39
+
+Modified:
+   trunk/xwars.py
+Log:
+html klappt
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-08 01:08:04 UTC (rev 38)
++++ trunk/xwars.py	2006-02-09 11:39:36 UTC (rev 39)
+@@ -51,8 +51,8 @@
+             self.bericht =  bericht
+ 
+     def _get_daten(self):
+-        startregexp = compile(r'Startbasis <b> (.+)</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
+-        zielregexp = compile(r'Zielbasis <b> (.+)</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
++        startregexp = compile(r'Startbasis <b>.*(\d{1,2}x\d{1,3}x\d{1,3})</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
++        zielregexp = compile(r'Zielbasis <b>.*(\d{1,2}x\d{1,3}x\d{1,3})</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
+         uhrzeitregexp = compile(r'Zeit <b>(\d+.\d+.\d+) (\d+:\d+:\d+.*)</b>')
+         self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
+         self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
+@@ -83,9 +83,102 @@
+         ZielbasisVerluste = (abs(self.zielbasis['Flotte'][0] - self.zielbasis['Flotte'][2]), abs(self.zielbasis['Flotte'][1] - self.zielbasis['Flotte'][3]))
+         self.startbasis['Verluste'] = StartbasisVerluste
+         self.zielbasis['Verluste'] = ZielbasisVerluste
+-        self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200
+-        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200
++        self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200.0
++        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200.0
+ 
++    def _make_template(self):
++        template = '''</table><table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>
++		        <td width="282px"></td>
++		        <td width="45px" height="9" bgcolor="#2A2A2A"></td>
++		        <td width="12px"></td>
++		        <td width="45px" xbgcolor="#2A2A2A"></td>
++		        <td width="281px"></td>
++		  </tr>
++		  <tr>
++		        <td xwidth="282" colspan="2" bgcolor="#2A2A2A" height="35px">&nbsp;<b>Statistiken</b>
++
++				<br>&nbsp;<font color="#CCCCCC">Verluste</td>
++		        <td width="12px"></td>
++		        <td xwidth="326px" colspan="2" xbgcolor="#2A2A2A"><font color="#222222">TDM Warreport v1 py</td>
++		  </tr>
++               </table>
++		    
++		<table border="0" cellspacing="0" cellpadding="0" width="665px">
++		<tr><td bgcolor="#2A2A2A" height="9px"></td></tr>
++		<tr>
++
++			<td width= "5px" bgcolor="#2A2A2A">&nbsp;</td>
++            <td width=  "5px" ></td>
++            <td><b>&nbsp;Werte vorher</td>
++			<td><b>&nbsp;nachher</b></td>
++			<td><b>&nbsp;Milit&auml;rpunkte vorher</b></td>
++            <td><b>nachher</b></td>
++			<td><b>Verlust</b></td>
++         </tr>
++         <tr><td bgcolor="#2A2A2A" height="3"></td></tr>
++        <tr><td bgcolor="#444444" height="3"></td></tr>
++        <tr><td bgcolor="#444444" height="1px"></td><td colspan="12" bgcolor="#000000"></tr>
++        <tr height="18px">
++			<td width="50px" bgcolor="#444444">&nbsp;Angreifer</td>
++            <td width=  "5px" ></td>
++		    <td bgcolor="#1A1A1A">&nbsp;%(Angreiferwertevorher)s</td>
++		    <td bgcolor="#1A1A1A">%(Angreiferwertenachher)s</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpvorher).2f</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpnachher).2f</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpverlust).2f</td>
++		</tr>
++		<tr><td bgcolor="#444444" height="1px"></td><td colspan="12" bgcolor="#000000"></tr>
++		<tr><td bgcolor="#2A2A2A" height="9"></td></tr>
++        <tr height="18px">
++			<td width="50px" bgcolor="#444444">&nbsp;Verteidiger</td>
++            <td width=  "5px" ></td>
++		    <td bgcolor="#1A1A1A">&nbsp;%(Verteidigerwertevorher)s</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigerwertenachher)s</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpvorher).2f</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpnachher).2f</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpverlust).2f</td>
++		</tr>
++		<tr><td bgcolor="#444444" height="1px"></td><td colspan="12" bgcolor="#000000"></tr>
++        <tr><td bgcolor="#2A2A2A" height="9"></td></tr>
++</table>
++<table border="0" cellspacing="0" cellpadding="0">
++		<tr>
++		    <td width="50px"  bgcolor="#2A2A2A" height="35px"><br>&nbsp;</td>
++		    <td width="65px"  bgcolor="#2A2A2A" align="right"><font color="CCCCCC">&nbsp;<br>&nbsp;</td>
++		    <td width="20px"  bgcolor="#2A2A2A"><font color="#888888"><br></td>
++		    <td width="146px" bgcolor="#2A2A2A"><font color="#CC5500">&nbsp;&nbsp;<br>&nbsp;&nbsp;<br></td>
++		    <td width="45px"  bgcolor="#2A2A2A" align="right"><b>&nbsp;&nbsp;<br>&nbsp;&nbsp;</td>
++		</tr>
++</table>
++<table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>''' % {'Angreifername':self.startbasis['Name'],
++        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + '/' + str(self.startbasis['Flotte'][1]),
++        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + '/' + str(self.startbasis['Flotte'][3]),
++        'Angreifermpvorher':self.startbasis['MP'],
++        'Angreifermpnachher':(self.startbasis['MP'] - self.startbasis['MPVerluste']),
++        'Angreifermpverlust':self.startbasis['MPVerluste'],
++        'Verteidigername':self.zielbasis['Name'],
++        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + '/' + str(self.zielbasis['Flotte'][1]),
++        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + '/' + str(self.zielbasis['Flotte'][3]),
++        'Verteidigermpvorher': self.zielbasis['MP'],
++        'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
++        'Verteidigermpverlust': self.zielbasis['MPVerluste']
++        }
++        self.template = template
++
++    def _insert_template(self):
++        berichtliste = self.bericht.splitlines()
++        del berichtliste[berichtliste.index('                <td bgcolor="#2A2A2A" align="right">Gesamt&nbsp;<br>(netto)&nbsp;</td>') + 2]
++        berichtliste.insert(berichtliste.index('                <td bgcolor="#2A2A2A" align="right">Gesamt&nbsp;<br>(netto)&nbsp;</td>') + 1,self.template)
++        self.bearbeiteterbericht = berichtliste
++
++    def manipulate(self):
++        koordinatenregexp = compile(r'\d{1,2}x\d{1,3}x\d{1,3}')
++        bericht = '\n'.join(self.bearbeiteterbericht)
++        bericht = koordinatenregexp.sub('',bericht)
++        bericht = bericht.replace('Login','The Dominion')
++        bericht = bericht.replace('auf Planet','auf einem Planeten')
++        self.bearbeiteterbericht = bericht.splitlines()
++        
+     def save(self):
+         berichtdatei = open(savedir + self.id,'w')
+-        berichtdatei.write(self.bericht)
++        berichtdatei.writelines(self.bearbeiteterbericht)
+
+
+
+From tiax at berlios.de  Thu Feb  9 13:29:40 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 9 Feb 2006 13:29:40 +0100
+Subject: [Pwnbot-commits] r40 - trunk
+Message-ID: <200602091229.k19CTeLu008409@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-09 13:29:21 +0100 (Thu, 09 Feb 2006)
+New Revision: 40
+
+Modified:
+   trunk/xwars.py
+Log:
+manipulation funktioniert soweit, kommandozeile benutzbar
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-09 11:39:36 UTC (rev 39)
++++ trunk/xwars.py	2006-02-09 12:29:21 UTC (rev 40)
+@@ -4,8 +4,9 @@
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+-from time import strptime
++from time import strptime, strftime
+ from re import compile
++from sys import argv
+ 
+ # Konfiguration
+ # Mit was soll die URl anfangen?
+@@ -165,6 +166,9 @@
+         }
+         self.template = template
+ 
++    def _make_namestring(self):
++        self.namestring = '%(Angreiferallianz)s%(Angreifername)s-%(Verteidigerallianz)s-%(Verteidigername)s-%(Zeit)s' % {'Angreiferallianz':self.startbasis['Allianz'],'Angreifername':self.startbasis['Name'],'Verteidigerallianz':self.zielbasis['Allianz'],'Verteidigername':self.zielbasis['Name'],'Zeit':strftime('%Y%m%d-%H%M',self.zeit)}
++        
+     def _insert_template(self):
+         berichtliste = self.bericht.splitlines()
+         del berichtliste[berichtliste.index('                <td bgcolor="#2A2A2A" align="right">Gesamt&nbsp;<br>(netto)&nbsp;</td>') + 2]
+@@ -177,8 +181,24 @@
+         bericht = koordinatenregexp.sub('',bericht)
+         bericht = bericht.replace('Login','The Dominion')
+         bericht = bericht.replace('auf Planet','auf einem Planeten')
++        bericht = bericht.replace('<title>X-Wars - The Third Legend (Gameserver)</title>','<title>%s</title>' % self.namestring)
++        bericht = bericht.replace('Schiffe von','Schiffe')
++        bericht = bericht.replace('Verteidigung auf','Verteidigung')
+         self.bearbeiteterbericht = bericht.splitlines()
+         
+     def save(self):
+-        berichtdatei = open(savedir + self.id,'w')
++        self.dateiname = savedir + self.namestring.replace('[','').replace(']','-') + '.html'
++        berichtdatei = open(self.dateiname,'w')
+         berichtdatei.writelines(self.bearbeiteterbericht)
++
++if __name__ == "__main__":
++    kb = kampfbericht(argv[1])
++    kb._get_daten()
++    kb._get_werte()
++    kb._get_verluste()
++    kb._make_template()
++    kb._insert_template()
++    kb._make_namestring()
++    kb.manipulate()
++    kb.save()
++    print kb.dateiname
+
+
+
+From tiax at berlios.de  Thu Feb  9 13:32:28 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 9 Feb 2006 13:32:28 +0100
+Subject: [Pwnbot-commits] r41 - trunk
+Message-ID: <200602091232.k19CWSdu009581@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-09 13:32:27 +0100 (Thu, 09 Feb 2006)
+New Revision: 41
+
+Added:
+   trunk/parse.sh
+Log:
+sh-wrapper f?\195?\188r den parser
+
+Added: trunk/parse.sh
+===================================================================
+--- trunk/parse.sh	2006-02-09 12:29:21 UTC (rev 40)
++++ trunk/parse.sh	2006-02-09 12:32:27 UTC (rev 41)
+@@ -0,0 +1,5 @@
++#!/bin/sh
++DATEINAME=$1
++NEUERDATEINAME=`python xwars.py $1`
++scp $NEUERDATEINAME tiax at nerds-r-us.org:/var/www/tiax/eee
++echo http://eee.planet-tiax.de/`echo $NEUERDATEINAME|cut -d'/' -f7`
+
+
+Property changes on: trunk/parse.sh
+___________________________________________________________________
+Name: svn:executable
+   + *
+
+
+
+From tiax at berlios.de  Thu Feb  9 13:35:42 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 9 Feb 2006 13:35:42 +0100
+Subject: [Pwnbot-commits] r42 - tags
+Message-ID: <200602091235.k19CZg11011420@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-09 13:35:40 +0100 (Thu, 09 Feb 2006)
+New Revision: 42
+
+Added:
+   tags/parser/
+Log:
+parser-tag erstellt
+
+Copied: tags/parser (from rev 41, trunk)
+
+
+
+From tiax at berlios.de  Fri Feb 10 00:18:21 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Fri, 10 Feb 2006 00:18:21 +0100
+Subject: [Pwnbot-commits] r43 - trunk
+Message-ID: <200602092318.k19NILUM014043@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-10 00:18:20 +0100 (Fri, 10 Feb 2006)
+New Revision: 43
+
+Modified:
+   trunk/ircbot.py
+   trunk/parse.sh
+   trunk/xwars.py
+Log:
+aufr?\195?\164umarbeiten
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/ircbot.py	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python
+-# -*- coding: iso8859-15 -*-
++# -*- coding: utf-8 -*-
+ 
+ # ## ### ### ### ### ### ### ### ### ### ### ###
+ # ircbot
+
+Modified: trunk/parse.sh
+===================================================================
+--- trunk/parse.sh	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/parse.sh	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+ DATEINAME=$1
+ NEUERDATEINAME=`python xwars.py $1`
+-scp $NEUERDATEINAME tiax at nerds-r-us.org:/var/www/tiax/eee
+-echo http://eee.planet-tiax.de/`echo $NEUERDATEINAME|cut -d'/' -f7`
++scp $NEUERDATEINAME tiax at nerds-r-us.org:/var/www/tdm/reports/html
++echo http://reports.victory-is-life.de/`echo $NEUERDATEINAME|cut -d'/' -f7`
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/xwars.py	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,6 +1,17 @@
+ #!/usr/bin/env python
+ # -*- coding: utf-8 -*-
+ 
++# ## ### ### ### ### ### ### ### ### ### ### ###
++# xwars
++# $Author$
++# $Date$
++# $Rev$
++# #############################################
++# # Ein library f?r verschiedene Funktionen im#
++# # Browsergame X-Wars                        #
++# # ### ### ### ### ### ### ### ### ### ### ### 
++
++# was an Modulen gebraucht wird
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+@@ -8,62 +19,72 @@
+ from re import compile
+ from sys import argv
+ 
+-# Konfiguration
+-# Mit was soll die URl anfangen?
+-urlstart = 'http://reports.xwars.gamigo.de/'
+-cachedir = '/home/tiax/xwars/parser/cache/'
+-savedir = '/home/tiax/xwars/parser/save/'
++class kampfbericht:
++    '''X-Wars Kampfberichte sind ein tolles Objekt. 
+ 
+-class kampfbericht:
++    Erwartet: URL als String, sollte mit dem in der Konfiguration definierten 
++    String anfangen, ist sicherheitstechnisch wohl eine ganz gute Idee'''
++    
++    # Konfiguration
++    # Mit was soll die URl anfangen?
++    urlstart = 'http://reports.xwars.gamigo.de/'
++    cachedir = '/home/tiax/xwars/parser/cache/'
++    savedir = '/home/tiax/xwars/parser/save/'
++
++
+     def __init__(self,url):
+-        if not path.isdir(cachedir):
++        '''wichtige Dinge, die vorher zu kl?ren sind'''
++        if not path.isdir(self.cachedir): # gibts die wichtigsten Verzeichnisse?
+             raise IOError('Cachedir existiert nicht')
+-        if not path.isdir(savedir):
++        if not path.isdir(self.savedir):
+             raise IOError('Savedir existiert nicht')
+-        self.startbasis = {}
+-        self.zielbasis = {}
++        self.startbasis = {} # damit die Flottenfunktionen halbwegs 
++        self.zielbasis = {}  # voneinander aufgerufen werden koennen
+         self.url = url    
+-        self._get_id()
+-        self._get_kb()
+ 
+     def _get_id(self):
+-        '''?berpr?ft kampfbericht-urls auf ihre g?ltigkeit
+-
+-        gets: url/string
+-        returns: kampfberichtid/string'''
++        '''?berpr?ft kampfbericht-urls auf ihre g?ltigkeit'''
+         
+-        if not self.url.startswith(urlstart):
++        if not self.url.startswith(self.urlstart): # kleiner Schutz gegen allzugro?en Unfug
+             raise IOError('Ung?ltiger Server')
+-        if not (self.url.split('=')[1].startswith('combat') and self.url.split('=')[1].endswith('.html')):
++        if not (self.url.split('=')[1].startswith('combat') \
++            and self.url.split('=')[1].endswith('.html')):
+             raise IOError('Ug?ltige ID')
+         else:
+             self.id =  self.url.split('=')[1].rstrip('.html')
+ 
+     def _get_kb(self):
+         '''holt den kampfbericht hervor 
+-        ?berpr?ft zun?chst, ob er vielleicht bereits abgerufen worden ist und l?dt dann aus dem cache'''
+-        if path.isfile(cachedir + self.id):
+-            self.bericht = GzipFile(cachedir + self.id,'r').read()
++        ?berpr?ft zun?chst, ob er vielleicht bereits abgerufen worden ist
++        und l?dt dann aus dem cache'''
++        if path.isfile(self.cachedir + self.id):
++            self.bericht = GzipFile(self.cachedir + self.id,'r').read()
+         else:
+-            bericht = urlopen('%(urlstart)s?id=%(berichtid)s.html' % {'urlstart':urlstart,'berichtid':self.id}).read()
+-            cachedatei = GzipFile(cachedir + self.id,'w')
++            bericht = urlopen('%(urlstart)s?id=%(berichtid)s.html' % \
++            {'urlstart':self.urlstart,'berichtid':self.id}).read()
++            cachedatei = GzipFile(self.cachedir + self.id,'w')
+             cachedatei.write(bericht)
+             cachedatei.close()
+             self.bericht =  bericht
+ 
+     def _get_daten(self):
++        '''extrahiert Daten ?ber die teilnehmenden Personen: Koordinaten, Allianz und Name'''
+         startregexp = compile(r'Startbasis <b>.*(\d{1,2}x\d{1,3}x\d{1,3})</b></br>&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
+         zielregexp = compile(r'Zielbasis <b>.*(\d{1,2}x\d{1,3}x\d{1,3})</b> </br>von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
+         uhrzeitregexp = compile(r'Zeit <b>(\d+.\d+.\d+) (\d+:\d+:\d+.*)</b>')
+-        self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
+-        self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
++        self.startbasis['Koordinaten'],\
++        self.startbasis['Allianz'],\
++        self.startbasis['Name'] = startregexp.search(self.bericht).groups()
++        self.zielbasis['Koordinaten'],\
++        self.zielbasis['Allianz'], \
++        self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
+         self.zeit = strptime(" ".join(uhrzeitregexp.search(self.bericht).groups()), '%d.%m.%Y %H:%M:%S')
+         
+     def _get_werte(self):
++        '''Holt sich die Flottenwerte, Verluste noch nicht'''
+         flottenregexp = compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
+         flotten = flottenregexp.findall(self.bericht)
+         # Angreifer haben nur eine Flotte und sind schnell erledigt
+-        # self.startbasis['Flotte'] = flotten.pop(0)
+         templiste = []
+         for item in flotten.pop(0):
+             templiste.append(int((item or 0)))
+@@ -72,14 +93,15 @@
+         # Verteidiger haben mehrere + Defense aber das z?hlen wir alles zusammen
+         AttVorher, DefVorher, AttNachher, DefNachher = 0,0,0,0
+         for item in flotten:
+-            AttVorher += int((item[0]) or 0)
+-            DefVorher += int((item[1]) or 0)
+-            AttNachher += int((item[2]) or 0)
+-            DefNachher += int((item[3]) or 0)
++            AttVorher += int((item[0]) or 0) # or 0 ist notwendig
++            DefVorher += int((item[1]) or 0) # verlorene Flotten sind bei X-Wars
++            AttNachher += int((item[2]) or 0) # nicht 0 
++            DefNachher += int((item[3]) or 0) # sondern nix.
+         self.zielbasis['Flotte'] = (AttVorher, DefVorher, AttNachher, DefNachher)
+         self.zielbasis['MP'] = (AttVorher + DefVorher) / 200.0
+         
+     def _get_verluste(self):
++        '''Holt sich die Verluste. Es ist sinnvoll, erst die Werte zu holen'''
+         StartbasisVerluste = (abs(self.startbasis['Flotte'][0] - self.startbasis['Flotte'][2]), abs(self.startbasis['Flotte'][1] - self.startbasis['Flotte'][3]))
+         ZielbasisVerluste = (abs(self.zielbasis['Flotte'][0] - self.zielbasis['Flotte'][2]), abs(self.zielbasis['Flotte'][1] - self.zielbasis['Flotte'][3]))
+         self.startbasis['Verluste'] = StartbasisVerluste
+@@ -88,6 +110,7 @@
+         self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200.0
+ 
+     def _make_template(self):
++        '''F?llt die ermittelten Daten und Werte ins Template ein'''
+         template = '''</table><table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>
+ 		        <td width="282px"></td>
+ 		        <td width="45px" height="9" bgcolor="#2A2A2A"></td>
+@@ -152,14 +175,14 @@
+ 		</tr>
+ </table>
+ <table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>''' % {'Angreifername':self.startbasis['Name'],
+-        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + '/' + str(self.startbasis['Flotte'][1]),
+-        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + '/' + str(self.startbasis['Flotte'][3]),
++        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + ' / ' + str(self.startbasis['Flotte'][1]),
++        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + ' / ' + str(self.startbasis['Flotte'][3]),
+         'Angreifermpvorher':self.startbasis['MP'],
+         'Angreifermpnachher':(self.startbasis['MP'] - self.startbasis['MPVerluste']),
+         'Angreifermpverlust':self.startbasis['MPVerluste'],
+         'Verteidigername':self.zielbasis['Name'],
+-        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + '/' + str(self.zielbasis['Flotte'][1]),
+-        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + '/' + str(self.zielbasis['Flotte'][3]),
++        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + ' / ' + str(self.zielbasis['Flotte'][1]),
++        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + ' / ' + str(self.zielbasis['Flotte'][3]),
+         'Verteidigermpvorher': self.zielbasis['MP'],
+         'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
+         'Verteidigermpverlust': self.zielbasis['MPVerluste']
+@@ -167,15 +190,33 @@
+         self.template = template
+ 
+     def _make_namestring(self):
++        '''Erstellt einen Dateinamentauglichen Namen f?r de Kampfbericht'''
+         self.namestring = '%(Angreiferallianz)s%(Angreifername)s-%(Verteidigerallianz)s-%(Verteidigername)s-%(Zeit)s' % {'Angreiferallianz':self.startbasis['Allianz'],'Angreifername':self.startbasis['Name'],'Verteidigerallianz':self.zielbasis['Allianz'],'Verteidigername':self.zielbasis['Name'],'Zeit':strftime('%Y%m%d-%H%M',self.zeit)}
+         
+     def _insert_template(self):
++        '''f?gt das ausgef?llte Template in den Kampfbericht ein'''
+         berichtliste = self.bericht.splitlines()
+         del berichtliste[berichtliste.index('                <td bgcolor="#2A2A2A" align="right">Gesamt&nbsp;<br>(netto)&nbsp;</td>') + 2]
+         berichtliste.insert(berichtliste.index('                <td bgcolor="#2A2A2A" align="right">Gesamt&nbsp;<br>(netto)&nbsp;</td>') + 1,self.template)
+         self.bearbeiteterbericht = berichtliste
+ 
++    def getreport(self):
++        '''Zusammenfassung: Bericht organisieren'''
++        self._get_id()
++        self._get_kb()
++
++    def analyze(self):
++        '''Zusammenfassung: Bericht analysieren und Daten ermitteln'''
++        self.getreport()
++        self._get_daten()
++        self._get_werte()
++        self._get_verluste()
++        self._make_namestring()
++
+     def manipulate(self):
++        '''Zusammenfassung: Den original-Kampfbericht ver?ndern'''
++        self._make_template()
++        self._insert_template()
+         koordinatenregexp = compile(r'\d{1,2}x\d{1,3}x\d{1,3}')
+         bericht = '\n'.join(self.bearbeiteterbericht)
+         bericht = koordinatenregexp.sub('',bericht)
+@@ -187,18 +228,14 @@
+         self.bearbeiteterbericht = bericht.splitlines()
+         
+     def save(self):
+-        self.dateiname = savedir + self.namestring.replace('[','').replace(']','-') + '.html'
++        '''Den Bericht ins Dateisystem speichern'''
++        self.dateiname = self.savedir + self.namestring.replace('[','').replace(']','-') + '.html'
+         berichtdatei = open(self.dateiname,'w')
+         berichtdatei.writelines(self.bearbeiteterbericht)
+ 
+ if __name__ == "__main__":
+     kb = kampfbericht(argv[1])
+-    kb._get_daten()
+-    kb._get_werte()
+-    kb._get_verluste()
+-    kb._make_template()
+-    kb._insert_template()
+-    kb._make_namestring()
++    kb.analyze()
+     kb.manipulate()
+     kb.save()
+     print kb.dateiname
+
+
+
+From tiax at berlios.de  Fri Feb 10 19:49:27 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Fri, 10 Feb 2006 19:49:27 +0100
+Subject: [Pwnbot-commits] r44 - trunk
+Message-ID: <200602101849.k1AInRiD006891@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-10 19:49:26 +0100 (Fri, 10 Feb 2006)
+New Revision: 44
+
+Modified:
+   trunk/ircbot.py
+Log:
+bot als daemon, utf8
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-09 23:18:20 UTC (rev 43)
++++ trunk/ircbot.py	2006-02-10 18:49:26 UTC (rev 44)
+@@ -14,10 +14,13 @@
+ # # ### ### ### ### ### ### ### ### ### ### ### #
+ 
+ # was an modulen gebraucht wird.
+-import socket # f?r die IRC-Verbindung
+-from sys import exit
++import socket # f??r die IRC-Verbindung
++import sys
++import time
++import os
++import xwars
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+-# wird als erstes aufgerufen. Sie stellt die Verbindung her und k?mmert sich um
++# wird als erstes aufgerufen. Sie stellt die Verbindung her und k??mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+ # andere Klasse aufgerufen,
+ 
+@@ -34,13 +37,13 @@
+     def _verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her und gibt zur Verarbeitung weiter
+ 
+-        erh?lt:
++        erh??lt:
+             server: string (host) oder tuple (host, port)
+             nickname: string oder liste
+             ident: optional string
+             realname: optional string
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+@@ -68,10 +71,10 @@
+     def _verarbeite_reingehendes(self):
+         '''liest den Buffer aus und verteilt das Reingehende auf die Funktionen
+ 
+-        erh?lt:
++        erh??lt:
+             nichts
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+@@ -90,7 +93,7 @@
+                 #log verbindung ist weg
+                 break
+             temp = self._lesebuffer.split('\n')
+-            self._lesebuffer = temp.pop() # Die letzte Zeile wird zur?ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
++            self._lesebuffer = temp.pop() # Die letzte Zeile wird zur??ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+                 if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+@@ -99,16 +102,16 @@
+                     try:
+                         befehl = getattr(self,'on_%s' % zeile[1])
+                         befehl(self._teile_zeile(zeile))
+-                    except AttributeError: # es gibt wohl keine on_EVENT Funktion f?r das gefundene EVENT, also rufen wir den (optionalen) Handler daf?r auf
++                    except AttributeError: # es gibt wohl keine on_EVENT Funktion f??r das gefundene EVENT, also rufen wir den (optionalen) Handler daf??r auf
+                         self.on_UNBEKANNT(self._teile_zeile(zeile))
+ 
+     def _teile_zeile(self, zeile):
+         ''' teilt reingehendes in ein Dictionary auf
+ 
+-        erh?lt:
++        erh??lt:
+             zeile: eine reinkommende Zeile als Liste
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             Dictionary:
+                 ['quelle']['host'],['ident'],['nickname']: string
+                 ['event']: string
+@@ -134,14 +137,14 @@
+ 
+     def _teile_befehl(self,zeile):
+         '''teilt erkannte Befehle in ein Dictionary auf. Was ein Befehl ist, wird in on_PRIVMSG behandelt.
+-        erh?lt:
++        erh??lt:
+             zeile: Dictionary:
+                 ['quelle']['host'],['ident'],['nickname']: string
+                 ['event']: string
+                 ['ziel']: string
+                 ['inhalt']: string
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             ['quelle']['host'],['ident'],['nick']: string
+             ['ziel']: string
+             ['befehl']: string
+@@ -170,22 +173,22 @@
+     def cmd_join(self, befehl):
+         '''betritt Channel
+ 
+-        erh?lt:
++        erh??lt:
+             Dictionary:
+                 ['argumente']: liste
+ 
+         ruft auf:
+-            join f?r jeden Eintrag in der liste ['argumente']'''
++            join f??r jeden Eintrag in der liste ['argumente']'''
+         for channel in befehl['argumente']:
+             self.join(channel)
+ 
+     def cmd_say(self, befehl):
+         '''sagt etwas in einem Channel
+ 
+-        erh?lt:
++        erh??lt:
+             befehl['argumente']: Liste
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+@@ -197,15 +200,15 @@
+     def cmd_die(self,befehl):
+         '''schaltet den Bot ab
+ 
+-        erh?lt:
++        erh??lt:
+             befehl['quelle']['ident']: string
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+             quit mit einer Standardmessage, falls das Ident-Field stellt
+-            ansonsten gibts ne notice zur?ck
++            ansonsten gibts ne notice zur??ck
+         '''
+         if befehl['quelle']['ident'] == 'tiax':
+             #log
+@@ -217,10 +220,10 @@
+     def cmd_ping(self,befehl):
+         '''antwortet mit pong
+ 
+-        erh?lt:
++        erh??lt:
+             befehl['ziel']: string
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+@@ -232,11 +235,11 @@
+             self.notice(befehl['quelle']['nickname'],'Pong')
+ 
+     def cmd_raw(self,befehl):
+-        '''l?sst Rohdaten an den Server schicken, ist nat?rlich mit Vorsicht zu genie?en.
+-        erh?lt:
++        '''l??sst Rohdaten an den Server schicken, ist nat??rlich mit Vorsicht zu genie??en.
++        erh??lt:
+             befehl[argumente] als Liste
+ 
+-        gibt zur?ck:
++        gibt zur??ck:
+             nichts
+ 
+         ruft auf:
+@@ -244,13 +247,20 @@
+         
+         self.rawsend(" ".join(befehl['argumente']))
+  
++    def cmd_parse(self,befehl):
++        '''parsed einen xwars-kampfbericht'''
++        url = befehl['argumente'][0]
++        kampfbericht = xwars.kampfbericht(url)
++        kampfbericht.analyze()
++        kampfbericht.manipulate()
++        kampfbericht.save()
++        self.msg(befehl['quelle']['nickname'],kampfbericht.dateiname)
+ 
+-
+-    # f?r allen m?glichen K?se
++    # f??r allen m??glichen K??se
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+ 
+-        erh?lt:
++        erh??lt:
+             rausgehendes: string'''
+         self.so.send('%s\r\n' % rausgehendes)
+ 
+@@ -259,7 +269,7 @@
+     def join(self,channel,key=''):
+         '''betritt Channel
+ 
+-        erh?lt:
++        erh??lt:
+             channel: string
+             key: string (optional)
+ 
+@@ -272,7 +282,7 @@
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus
+ 
+-        erh?lt:
++        erh??lt:
+             ziel: string
+             nachricht: string
+ 
+@@ -285,7 +295,7 @@
+     def notice(self,ziel,nachricht):
+         '''schickt eine Nachricht als Notice raus
+ 
+-        erh?lt:
++        erh??lt:
+             ziel: string
+             nachricht: string
+ 
+@@ -298,7 +308,7 @@
+     def quit(self,quitmessage):
+         '''macht den Bot aus
+ 
+-        erh?lt:
++        erh??lt:
+             quitmessage: string
+ 
+         ruft auf:
+@@ -319,7 +329,7 @@
+             self.currentnickname = self.nicknames.pop(0)
+         except IndexError:
+             #log
+-            exit('Nicknames sind ausgegangen')
++            sys.exit('Nicknames sind ausgegangen')
+         #log
+         self.rawsend('NICK %s' % self.currentnickname)
+ 
+@@ -347,4 +357,22 @@
+         pass
+ 
+ if __name__ == '__main__':
++    if "--daemon" in sys.argv:
++        # wir machen einen daemon
++        if not (os.fork()):
++            # eigene session erstellen
++            os.setsid()
++            sys.stdin.close()
++            sys.stdout = open('/home/tiax/daemonlog','w')
++            sys.stderr = sys.stdout
++            if not (os.fork()):
++                ppid = os.getppid()
++                while (ppid != 1):
++                    time.sleep(0.5)
++                    ppid = os.getppid()
++            else:
++                os._exit(0)
++        else:
++            os.wait()
++            sys.exit()
+     GameSurge = ircverbindung(('irc.eu.gamesurge.net',6667),['pwn','own','pwn0r'])
+
+
+
+From tiax at berlios.de  Fri Feb 10 22:21:03 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Fri, 10 Feb 2006 22:21:03 +0100
+Subject: [Pwnbot-commits] r45 - trunk
+Message-ID: <200602102121.k1ALL32T000384@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-10 22:20:59 +0100 (Fri, 10 Feb 2006)
+New Revision: 45
+
+Modified:
+   trunk/ircbot.py
+Log:
+kleinere ?\195?\164nderungen, bot parsed
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-10 18:49:26 UTC (rev 44)
++++ trunk/ircbot.py	2006-02-10 21:20:59 UTC (rev 45)
+@@ -30,6 +30,7 @@
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+         self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+         #log
++        print 'Verbindung zu %s wird hergestellt.' 
+         self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+     # Grundlegendes
+@@ -64,6 +65,7 @@
+             server = (server, 6667)
+         self.so.connect(server)
+         #log verbindung mit ident und realname
++        print 'Verwende Nick %s und Ident %s' % (self.currentnickname, ident)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+         self.so.send('NICK %s\r\n' % self.currentnickname)
+         self._verarbeite_reingehendes() # Die Verbindung sollte hergestellt sein. Wir brauchen einen Loop der aus dem Buffer liest und verarbeitet
+@@ -88,9 +90,11 @@
+                 self._lesebuffer = self.so.recv(8192)
+             except socket.error:
+                 #log verbindung ist weg
++                print "Verbindung unterbrochen"
+                 break
+             if len(self._lesebuffer) == 0:
+                 #log verbindung ist weg
++                print "Verbindung unterbrochen"
+                 break
+             temp = self._lesebuffer.split('\n')
+             self._lesebuffer = temp.pop() # Die letzte Zeile wird zur?ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
+@@ -103,6 +107,8 @@
+                         befehl = getattr(self,'on_%s' % zeile[1])
+                         befehl(self._teile_zeile(zeile))
+                     except AttributeError: # es gibt wohl keine on_EVENT Funktion f?r das gefundene EVENT, also rufen wir den (optionalen) Handler daf?r auf
++                        #log
++                        print 'EE Nicht erkanntes Event:' % zeile
+                         self.on_UNBEKANNT(self._teile_zeile(zeile))
+ 
+     def _teile_zeile(self, zeile):
+@@ -155,18 +161,23 @@
+ 
+         '''
+         befehl = {}
+-        befehl['quelle'] = zeile['quelle']
+-        befehl['ziel'] = zeile['ziel']
+-        if zeile['inhalt'][0].startswith(self.currentnickname):
+-            zeile['inhalt'].pop(0)
+-        befehl['befehl'] = zeile['inhalt'][0]
+-        befehl['argumente'] = zeile['inhalt'][1:]
+         try:
++            befehl['quelle'] = zeile['quelle']
++            befehl['ziel'] = zeile['ziel']
++            if zeile['inhalt'][0].startswith(self.currentnickname):
++                zeile['inhalt'].pop(0)
++            befehl['befehl'] = zeile['inhalt'][0]
++            befehl['argumente'] = zeile['inhalt'][1:]
++        except IndexError:
++            pass
++        try:
+             temp = getattr(self,'cmd_%s' % befehl['befehl'])
+-            #llog befehl erhalte
++            #log befehl erhalte
++            print 'Befehl: %s' % befehl
+             temp(befehl)
+         except AttributeError: # keine Funktion mit cmd_BEFEHL gefunden.
+             #log
++            print 'Befehl nicht gefunden: %s' % befehl
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
+     # Befehlshandler
+@@ -180,6 +191,8 @@
+         ruft auf:
+             join f?r jeden Eintrag in der liste ['argumente']'''
+         for channel in befehl['argumente']:
++            #log
++            print 'Betrete %s' % channel
+             self.join(channel)
+ 
+     def cmd_say(self, befehl):
+@@ -195,6 +208,7 @@
+             msg mit argumente[0] als Ziel der Message und argumente[1:] als Message'''
+         ziel = befehl['argumente'][0]
+         nachricht = " ".join(befehl['argumente'][1:])
++        print 'Nachricht an %s: %s' % (ziel,nachricht)
+         self.msg(ziel,nachricht)
+ 
+     def cmd_die(self,befehl):
+@@ -244,17 +258,25 @@
+ 
+         ruft auf:
+             raw mit genau dem, was der user befiehlt'''
+-        
++        #log
++        print 'Raw: %s' % befehl
+         self.rawsend(" ".join(befehl['argumente']))
+  
+     def cmd_parse(self,befehl):
+         '''parsed einen xwars-kampfbericht'''
+-        url = befehl['argumente'][0]
+-        kampfbericht = xwars.kampfbericht(url)
+-        kampfbericht.analyze()
+-        kampfbericht.manipulate()
+-        kampfbericht.save()
+-        self.msg(befehl['quelle']['nickname'],kampfbericht.dateiname)
++        try:
++            url = befehl['argumente'][0]
++        except IndexEror:
++            self.msg(befehl['quelle']['nickname'],'Keine URL angegeben')
++        try:
++            kampfbericht = xwars.kampfbericht(url)
++        except:
++            self.msg(befehl['quelle']['nickname'],'Fehler')
++        else:
++            kampfbericht.analyze()
++            kampfbericht.manipulate()
++            kampfbericht.save()
++            self.msg(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
+ 
+     # f?r allen m?glichen K?se
+     def rawsend(self,rausgehendes):
+@@ -337,6 +359,7 @@
+         '''die IRC Verbindung ist gerade hergestellt worden
+         Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
+         #log
++        print 'Verbindung hergestellt'
+         pass
+ 
+     # Textevents
+@@ -345,8 +368,9 @@
+         '''bearbeitet eingehende Nachrichten'''
+         if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
+             self._teile_befehl(zeile)
+-        # Ende DEBUG
+     
++        print 'Nachricht: %s' % zeile
++
+     def on_NICK(self,zeile):
+         '''jemand hat den nick geandert. Das koennten auch wir sein! damit der Bot die Befehle trotzdem als an ihn gerichtet erkennt, muss er davon in Kenntniss gesetzt werden'''
+         if zeile['quelle']['nickname'] == self.currentnickname:
+
+
+
+From tiax at berlios.de  Tue Feb 14 11:29:23 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Tue, 14 Feb 2006 11:29:23 +0100
+Subject: [Pwnbot-commits] r46 - trunk
+Message-ID: <200602141029.k1EATNU9029539@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-14 11:29:22 +0100 (Tue, 14 Feb 2006)
+New Revision: 46
+
+Modified:
+   trunk/ircbot.py
+Log:
+verbessertes errorhandling part1
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-10 21:20:59 UTC (rev 45)
++++ trunk/ircbot.py	2006-02-14 10:29:22 UTC (rev 46)
+@@ -30,7 +30,7 @@
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+         self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+         #log
+-        print 'Verbindung zu %s wird hergestellt.' 
++        print 'Verbindung zu %s wird hergestellt.' % str(server)
+         self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+     # Grundlegendes
+@@ -266,17 +266,20 @@
+         '''parsed einen xwars-kampfbericht'''
+         try:
+             url = befehl['argumente'][0]
+-        except IndexEror:
++        except IndexError:
+             self.msg(befehl['quelle']['nickname'],'Keine URL angegeben')
+-        try:
++        else:
+             kampfbericht = xwars.kampfbericht(url)
+-        except:
+-            self.msg(befehl['quelle']['nickname'],'Fehler')
+-        else:
+-            kampfbericht.analyze()
+-            kampfbericht.manipulate()
+-            kampfbericht.save()
+-            self.msg(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
++            try:
++                kampfbericht.analyze()
++            except (IOError), meldung:
++                self.notice(befehl['quelle']['nickname'],meldung)
++            except AttributeError:
++                self.notice(befehl['quelle']['nickname'],'Ung?ltige URL')
++            else:
++                kampfbericht.manipulate()
++                kampfbericht.save()
++                self.notice(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
+ 
+     # f?r allen m?glichen K?se
+     def rawsend(self,rausgehendes):
+
+
+
+From tiax at berlios.de  Tue Feb 14 11:33:26 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Tue, 14 Feb 2006 11:33:26 +0100
+Subject: [Pwnbot-commits] r47 - trunk
+Message-ID: <200602141033.k1EAXQxo030020@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-14 11:33:26 +0100 (Tue, 14 Feb 2006)
+New Revision: 47
+
+Modified:
+   trunk/xwars.py
+Log:
+kbs per regexp ?\195?\188berpr?\195?\188fen
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-14 10:29:22 UTC (rev 46)
++++ trunk/xwars.py	2006-02-14 10:33:26 UTC (rev 47)
+@@ -44,15 +44,16 @@
+ 
+     def _get_id(self):
+         '''?berpr?ft kampfbericht-urls auf ihre g?ltigkeit'''
+-        
++        urlregexp = compile('http:\/\/reports.xwars.gamigo.de/.*id=(.*)\.html')
+         if not self.url.startswith(self.urlstart): # kleiner Schutz gegen allzugro?en Unfug
+             raise IOError('Ung?ltiger Server')
+-        if not (self.url.split('=')[1].startswith('combat') \
+-            and self.url.split('=')[1].endswith('.html')):
+-            raise IOError('Ug?ltige ID')
+-        else:
+-            self.id =  self.url.split('=')[1].rstrip('.html')
+-
++        try:
++            self.id = urlregexp.search(self.url).groups()[0]
++        except AttributeError:
++            raise IOError('Ung?ltige URL')
++        if not self.id:
++            raise IOError('Ung?ltige URL')
++        
+     def _get_kb(self):
+         '''holt den kampfbericht hervor 
+         ?berpr?ft zun?chst, ob er vielleicht bereits abgerufen worden ist
+
+
+
+From tiax at berlios.de  Sun Feb 19 01:29:12 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Sun, 19 Feb 2006 01:29:12 +0100
+Subject: [Pwnbot-commits] r48 - trunk
+Message-ID: <200602190029.k1J0TC0L015870@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-19 01:28:56 +0100 (Sun, 19 Feb 2006)
+New Revision: 48
+
+Modified:
+   trunk/xwars.py
+Log:
+tausendertrennzeichen bei den stats
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-14 10:33:26 UTC (rev 47)
++++ trunk/xwars.py	2006-02-19 00:28:56 UTC (rev 48)
+@@ -18,6 +18,7 @@
+ from time import strptime, strftime
+ from re import compile
+ from sys import argv
++from locale import format, setlocale, LC_ALL
+ 
+ class kampfbericht:
+     '''X-Wars Kampfberichte sind ein tolles Objekt. 
+@@ -112,6 +113,8 @@
+ 
+     def _make_template(self):
+         '''F?llt die ermittelten Daten und Werte ins Template ein'''
++        setlocale(LC_ALL,'')
++        nice = lambda x: format('%s',x,True)
+         template = '''</table><table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>
+ 		        <td width="282px"></td>
+ 		        <td width="45px" height="9" bgcolor="#2A2A2A"></td>
+@@ -148,9 +151,9 @@
+             <td width=  "5px" ></td>
+ 		    <td bgcolor="#1A1A1A">&nbsp;%(Angreiferwertevorher)s</td>
+ 		    <td bgcolor="#1A1A1A">%(Angreiferwertenachher)s</td>
+-		    <td bgcolor="#1A1A1A">%(Angreifermpvorher).2f</td>
+-		    <td bgcolor="#1A1A1A">%(Angreifermpnachher).2f</td>
+-		    <td bgcolor="#1A1A1A">%(Angreifermpverlust).2f</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpvorher)s</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpnachher)s</td>
++		    <td bgcolor="#1A1A1A">%(Angreifermpverlust)s</td>
+ 		</tr>
+ 		<tr><td bgcolor="#444444" height="1px"></td><td colspan="12" bgcolor="#000000"></tr>
+ 		<tr><td bgcolor="#2A2A2A" height="9"></td></tr>
+@@ -159,9 +162,9 @@
+             <td width=  "5px" ></td>
+ 		    <td bgcolor="#1A1A1A">&nbsp;%(Verteidigerwertevorher)s</td>
+ 		    <td bgcolor="#1A1A1A">%(Verteidigerwertenachher)s</td>
+-		    <td bgcolor="#1A1A1A">%(Verteidigermpvorher).2f</td>
+-		    <td bgcolor="#1A1A1A">%(Verteidigermpnachher).2f</td>
+-		    <td bgcolor="#1A1A1A">%(Verteidigermpverlust).2f</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpvorher)s</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpnachher)s</td>
++		    <td bgcolor="#1A1A1A">%(Verteidigermpverlust)s</td>
+ 		</tr>
+ 		<tr><td bgcolor="#444444" height="1px"></td><td colspan="12" bgcolor="#000000"></tr>
+         <tr><td bgcolor="#2A2A2A" height="9"></td></tr>
+@@ -176,17 +179,17 @@
+ 		</tr>
+ </table>
+ <table border="0" cellspacing="0" cellpadding="0" width="665px"><tr><td height="12px"></td></tr><tr>''' % {'Angreifername':self.startbasis['Name'],
+-        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + ' / ' + str(self.startbasis['Flotte'][1]),
+-        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + ' / ' + str(self.startbasis['Flotte'][3]),
+-        'Angreifermpvorher':self.startbasis['MP'],
+-        'Angreifermpnachher':(self.startbasis['MP'] - self.startbasis['MPVerluste']),
+-        'Angreifermpverlust':self.startbasis['MPVerluste'],
++        'Angreiferwertevorher':nice(self.startbasis['Flotte'][0]) + ' / ' + nice(self.startbasis['Flotte'][1]),
++        'Angreiferwertenachher':nice(self.startbasis['Flotte'][2]) + ' / ' + nice(self.startbasis['Flotte'][3]),
++        'Angreifermpvorher':nice(self.startbasis['MP']),
++        'Angreifermpnachher':nice(self.startbasis['MP'] - self.startbasis['MPVerluste']),
++        'Angreifermpverlust':nice(self.startbasis['MPVerluste']),
+         'Verteidigername':self.zielbasis['Name'],
+-        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + ' / ' + str(self.zielbasis['Flotte'][1]),
+-        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + ' / ' + str(self.zielbasis['Flotte'][3]),
+-        'Verteidigermpvorher': self.zielbasis['MP'],
++        'Verteidigerwertevorher':nice(self.zielbasis['Flotte'][0]) + ' / ' + nice(self.zielbasis['Flotte'][1]),
++        'Verteidigerwertenachher':nice(self.zielbasis['Flotte'][2]) + ' / ' + nice(self.zielbasis['Flotte'][3]),
++        'Verteidigermpvorher': nice(self.zielbasis['MP']),
+         'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
+-        'Verteidigermpverlust': self.zielbasis['MPVerluste']
++        'Verteidigermpverlust': nice(self.zielbasis['MPVerluste'])
+         }
+         self.template = template
+ 
+
+
+
+From tiax at berlios.de  Thu Feb 23 01:41:31 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 23 Feb 2006 01:41:31 +0100
+Subject: [Pwnbot-commits] r49 - trunk
+Message-ID: <200602230041.k1N0fVm2015463@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-23 01:41:14 +0100 (Thu, 23 Feb 2006)
+New Revision: 49
+
+Modified:
+   trunk/xwars.py
+Log:
+kleiner fehler noch
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-19 00:28:56 UTC (rev 48)
++++ trunk/xwars.py	2006-02-23 00:41:14 UTC (rev 49)
+@@ -188,7 +188,7 @@
+         'Verteidigerwertevorher':nice(self.zielbasis['Flotte'][0]) + ' / ' + nice(self.zielbasis['Flotte'][1]),
+         'Verteidigerwertenachher':nice(self.zielbasis['Flotte'][2]) + ' / ' + nice(self.zielbasis['Flotte'][3]),
+         'Verteidigermpvorher': nice(self.zielbasis['MP']),
+-        'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
++        'Verteidigermpnachher': nice(self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
+         'Verteidigermpverlust': nice(self.zielbasis['MPVerluste'])
+         }
+         self.template = template
+
+
+
+From tiax at berlios.de  Thu Feb 23 01:44:32 2006
+From: tiax at berlios.de (tiax at BerliOS)
+Date: Thu, 23 Feb 2006 01:44:32 +0100
+Subject: [Pwnbot-commits] r50 - in branches: . recodemitclasses
+Message-ID: <200602230044.k1N0iWTJ016225@sheep.berlios.de>
+
+Author: tiax
+Date: 2006-02-23 01:44:14 +0100 (Thu, 23 Feb 2006)
+New Revision: 50
+
+Added:
+   branches/recodemitclasses/
+Modified:
+   branches/recodemitclasses/ircbot.py
+Log:
+recodebranch mit classes eingef?\195?\188hrt
+
+Copied: branches/recodemitclasses (from rev 49, trunk)
+
+Modified: branches/recodemitclasses/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-23 00:41:14 UTC (rev 49)
++++ branches/recodemitclasses/ircbot.py	2006-02-23 00:44:14 UTC (rev 50)
+@@ -19,387 +19,42 @@
+ import time
+ import os
+ import xwars
+-# es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+-# wird als erstes aufgerufen. Sie stellt die Verbindung her und k?mmert sich um
+-# alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+-# andere Klasse aufgerufen,
+ 
++class ircevent(object):
++    '''Etwas im IRC ist passiert'''
++    __slots__ = ['quelle','ziel','event','inhalt','parent']
++    quelle = {}
++    
++    def __init__(self,zeile,parent):
++        self.parent = parent
++        self._teile(zeile)
+ 
+-class ircverbindung:
+-    def __init__(self,server,nickname,ident=None,realname=None):
+-        '''gleich verbinden, wenn die klasse erstellt wird'''
+-        self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+-        #log
+-        print 'Verbindung zu %s wird hergestellt.' % str(server)
+-        self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+-
+-    # Grundlegendes
+-
+-    def _verbinde(self,server,nickname,ident=None,realname=None):
+-        '''stellt die Verbindung zum Server her und gibt zur Verarbeitung weiter
+-
+-        erh?lt:
+-            server: string (host) oder tuple (host, port)
+-            nickname: string oder liste
+-            ident: optional string
+-            realname: optional string
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            _verarbeite_reingehendes
+-        '''
+-        self.nicknames = []
+-        if type(nickname) != type([]): # Nicknames brauchen wir immer als Liste - falls einer davon belegt ist
+-            self.nicknames.append(nickname)
+-        else:
+-            self.nicknames.extend(nickname)
+-        self.currentnickname = self.nicknames.pop(0)
+-        ident = ident or self.currentnickname # ident und realname sind nicht so wichtig
+-        realname = realname or self.currentnickname # falls keine festgelegt sind, brauchen wir aber _irgendwelche_
+-        # ident und nickname werden in Zukunft auch gar nicht mehr gebraucht,
+-        # deswegen werden wir dafuer auch jetzt keine Attribute erstellen
+-        self.so = socket.socket()
+-        if type(server) != type(()):
+-            server = (server, 6667)
+-        self.so.connect(server)
+-        #log verbindung mit ident und realname
+-        print 'Verwende Nick %s und Ident %s' % (self.currentnickname, ident)
+-        self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+-        self.so.send('NICK %s\r\n' % self.currentnickname)
+-        self._verarbeite_reingehendes() # Die Verbindung sollte hergestellt sein. Wir brauchen einen Loop der aus dem Buffer liest und verarbeitet
+-
+-    def _verarbeite_reingehendes(self):
+-        '''liest den Buffer aus und verteilt das Reingehende auf die Funktionen
+-
+-        erh?lt:
+-            nichts
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            Die Funktion, deren Event zu on_EVENT passt (etwa on_PRIVMSG), mit dem Ergebnis von _teile_zeile
+-            Falls keine Funktion passt, wird on_UNBEKANNT mit dem Ergebnis von _teile_zeile aufgerufen
+-
+-        '''
+-
+-        while 1:
+-            try:
+-                self._lesebuffer = self.so.recv(8192)
+-            except socket.error:
+-                #log verbindung ist weg
+-                print "Verbindung unterbrochen"
+-                break
+-            if len(self._lesebuffer) == 0:
+-                #log verbindung ist weg
+-                print "Verbindung unterbrochen"
+-                break
+-            temp = self._lesebuffer.split('\n')
+-            self._lesebuffer = temp.pop() # Die letzte Zeile wird zur?ckgestellt, da sie eventuell noch gar nicht ganz zu ende war. Wir empfangen nicht Zeilen- sondern Byteweise.
+-            for zeile in temp:
+-                zeile = zeile.rstrip().split()
+-                if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+-                    self.so.send('PONG %s\r\n' % zeile[1])
+-                else:
+-                    try:
+-                        befehl = getattr(self,'on_%s' % zeile[1])
+-                        befehl(self._teile_zeile(zeile))
+-                    except AttributeError: # es gibt wohl keine on_EVENT Funktion f?r das gefundene EVENT, also rufen wir den (optionalen) Handler daf?r auf
+-                        #log
+-                        print 'EE Nicht erkanntes Event:' % zeile
+-                        self.on_UNBEKANNT(self._teile_zeile(zeile))
+-
+-    def _teile_zeile(self, zeile):
+-        ''' teilt reingehendes in ein Dictionary auf
+-
+-        erh?lt:
+-            zeile: eine reinkommende Zeile als Liste
+-
+-        gibt zur?ck:
+-            Dictionary:
+-                ['quelle']['host'],['ident'],['nickname']: string
+-                ['event']: string
+-                ['ziel']: string
+-                ['inhalt']: string
+-        '''
+-        temp = {}
+-        temp['quelle'] = {}
+-        if '@' in zeile[0]:
+-            temp['quelle']['nickname'] = zeile[0].split('!')[0].lstrip(':')
+-            temp['quelle']['ident'] = zeile[0].split('@')[0].split('!')[1]
+-            temp['quelle']['host'] = zeile[0].split('@')[1]
+-        else:
+-            temp['quelle']['nickname'], temp['quelle']['ident'], temp['quelle']['host'] = 'none','none','none'
+-        temp['event'] = zeile[1]
+-        temp['ziel'] = zeile[2]
+-        if len(zeile) >= 4:
+-            temp['inhalt'] = zeile[3:]
+-        else:
+-            temp['inhalt'] = zeile[2:]
+-        temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
+-        return temp
+-
+-    def _teile_befehl(self,zeile):
+-        '''teilt erkannte Befehle in ein Dictionary auf. Was ein Befehl ist, wird in on_PRIVMSG behandelt.
+-        erh?lt:
+-            zeile: Dictionary:
+-                ['quelle']['host'],['ident'],['nickname']: string
+-                ['event']: string
+-                ['ziel']: string
+-                ['inhalt']: string
+-
+-        gibt zur?ck:
+-            ['quelle']['host'],['ident'],['nick']: string
+-            ['ziel']: string
+-            ['befehl']: string
+-            ['argumente']: liste
+-
+-        ruf auf:
+-            cmd_BEFEHL falls vorhanden, ansonsten: Fehlermeldung per notice
+-
+-        '''
+-        befehl = {}
++    def _teile(self,zeile):
++        '''teilt die Zeile in Attribute f?r die Klase auf'''
++        zeile = zeile.split()
++        quelle = zeile.pop(0).split('!')
++        self.quelle['nick'] = quelle[0]
+         try:
+-            befehl['quelle'] = zeile['quelle']
+-            befehl['ziel'] = zeile['ziel']
+-            if zeile['inhalt'][0].startswith(self.currentnickname):
+-                zeile['inhalt'].pop(0)
+-            befehl['befehl'] = zeile['inhalt'][0]
+-            befehl['argumente'] = zeile['inhalt'][1:]
++            self.quelle['ident'] = quelle[1]
+         except IndexError:
+-            pass
+-        try:
+-            temp = getattr(self,'cmd_%s' % befehl['befehl'])
+-            #log befehl erhalte
+-            print 'Befehl: %s' % befehl
+-            temp(befehl)
+-        except AttributeError: # keine Funktion mit cmd_BEFEHL gefunden.
+-            #log
+-            print 'Befehl nicht gefunden: %s' % befehl
+-            self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+-
+-    # Befehlshandler
+-    def cmd_join(self, befehl):
+-        '''betritt Channel
+-
+-        erh?lt:
+-            Dictionary:
+-                ['argumente']: liste
+-
+-        ruft auf:
+-            join f?r jeden Eintrag in der liste ['argumente']'''
+-        for channel in befehl['argumente']:
+-            #log
+-            print 'Betrete %s' % channel
+-            self.join(channel)
+-
+-    def cmd_say(self, befehl):
+-        '''sagt etwas in einem Channel
+-
+-        erh?lt:
+-            befehl['argumente']: Liste
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            msg mit argumente[0] als Ziel der Message und argumente[1:] als Message'''
+-        ziel = befehl['argumente'][0]
+-        nachricht = " ".join(befehl['argumente'][1:])
+-        print 'Nachricht an %s: %s' % (ziel,nachricht)
+-        self.msg(ziel,nachricht)
+-
+-    def cmd_die(self,befehl):
+-        '''schaltet den Bot ab
+-
+-        erh?lt:
+-            befehl['quelle']['ident']: string
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            quit mit einer Standardmessage, falls das Ident-Field stellt
+-            ansonsten gibts ne notice zur?ck
+-        '''
+-        if befehl['quelle']['ident'] == 'tiax':
+-            #log
+-            self.quit('diediedie')
++            self.quelle['ident'], self.quelle['host'] = (None, None)
+         else:
+-            self.notice(befehl['quelle']['nick'],'Du darfst den Bot nicht abschalten')
+-            #log
++            self.quelle['ident'] = quelle[1].split('@')[0]
++            self.quelle['host'] = quelle[1].split('@')[1]
++        self.event = zeile.pop(0)
++        self.ziel = zeile.pop(0)
++        self.inhalt = zeile 
++        
++    def Log(self):
++        '''schreibt das event ins logfile'''
++        logging.log(quelle=self.quelle['gesamthost'],event=self.event,ziel=self.ziel,inhalt=self.inhalt)
+ 
+-    def cmd_ping(self,befehl):
+-        '''antwortet mit pong
+-
+-        erh?lt:
+-            befehl['ziel']: string
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            msg "Pong" an Nick oder Channel
+-        '''
+-        if befehl['ziel'].startswith('#'):
+-            self.msg(befehl['ziel'],'Pong')
++    def Checkforcommand(self):
++        '''?berpr?ft die den Inhalt auf einen Befehl und gibt den zur?ck bei Erfolg, ansonsten nichts'''
++        if self.inhalt[0].startswith(self.parent.nick) or self.ziel == self.parent.nick:
++            if self.inhalt[0].startswith(self.parent.nick): self.inhalt.pop(0)
++            befehl = self.inhalt.pop(0)
++            argumente = self.inhalt
++            return {'befehl':befehl,'argumente':argumente}
+         else:
+-            self.notice(befehl['quelle']['nickname'],'Pong')
+-
+-    def cmd_raw(self,befehl):
+-        '''l?sst Rohdaten an den Server schicken, ist nat?rlich mit Vorsicht zu genie?en.
+-        erh?lt:
+-            befehl[argumente] als Liste
+-
+-        gibt zur?ck:
+-            nichts
+-
+-        ruft auf:
+-            raw mit genau dem, was der user befiehlt'''
+-        #log
+-        print 'Raw: %s' % befehl
+-        self.rawsend(" ".join(befehl['argumente']))
+- 
+-    def cmd_parse(self,befehl):
+-        '''parsed einen xwars-kampfbericht'''
+-        try:
+-            url = befehl['argumente'][0]
+-        except IndexError:
+-            self.msg(befehl['quelle']['nickname'],'Keine URL angegeben')
+-        else:
+-            kampfbericht = xwars.kampfbericht(url)
+-            try:
+-                kampfbericht.analyze()
+-            except (IOError), meldung:
+-                self.notice(befehl['quelle']['nickname'],meldung)
+-            except AttributeError:
+-                self.notice(befehl['quelle']['nickname'],'Ung?ltige URL')
+-            else:
+-                kampfbericht.manipulate()
+-                kampfbericht.save()
+-                self.notice(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
+-
+-    # f?r allen m?glichen K?se
+-    def rawsend(self,rausgehendes):
+-        '''schickt Daten an den Server
+-
+-        erh?lt:
+-            rausgehendes: string'''
+-        self.so.send('%s\r\n' % rausgehendes)
+-
+-    # konkrete Befehle
+-
+-    def join(self,channel,key=''):
+-        '''betritt Channel
+-
+-        erh?lt:
+-            channel: string
+-            key: string (optional)
+-
+-        ruft auf:
+-            rawsend
+-        '''
+-        #log
+-        self.rawsend('JOIN %s %s' % (channel, key))
+-
+-    def msg(self,ziel,nachricht):
+-        '''schickt Nachrichten raus
+-
+-        erh?lt:
+-            ziel: string
+-            nachricht: string
+-
+-        ruft auf:
+-            rawsend
+-        '''
+-        #log
+-        self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
+-
+-    def notice(self,ziel,nachricht):
+-        '''schickt eine Nachricht als Notice raus
+-
+-        erh?lt:
+-            ziel: string
+-            nachricht: string
+-
+-        ruft auf:
+-            rawsend
+-        '''
+-        #log
+-        self.rawsend('NOTICE %s :%s' % (ziel,nachricht))
+-
+-    def quit(self,quitmessage):
+-        '''macht den Bot aus
+-
+-        erh?lt:
+-            quitmessage: string
+-
+-        ruft auf:
+-            rawsend
+-        '''
+-        #log
+-        self.rawsend('quit :%s' % quitmessage)
+-        self.so.close()
+-
+-    # Events
+-
+-    # Numerics
+-
+-    def on_433(self,zeile):
+-        ''' der nickname ist bereits belegt
+-        wir holen jetzt weitere nicks aus der anfangs erstellten Liste. Falls die leer wird, beenden wir den Bot'''
+-        try:
+-            self.currentnickname = self.nicknames.pop(0)
+-        except IndexError:
+-            #log
+-            sys.exit('Nicknames sind ausgegangen')
+-        #log
+-        self.rawsend('NICK %s' % self.currentnickname)
+-
+-    def on_001(self,zeile):
+-        '''die IRC Verbindung ist gerade hergestellt worden
+-        Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
+-        #log
+-        print 'Verbindung hergestellt'
+-        pass
+-
+-    # Textevents
+-
+-    def on_PRIVMSG(self,zeile):
+-        '''bearbeitet eingehende Nachrichten'''
+-        if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
+-            self._teile_befehl(zeile)
+-    
+-        print 'Nachricht: %s' % zeile
+-
+-    def on_NICK(self,zeile):
+-        '''jemand hat den nick geandert. Das koennten auch wir sein! damit der Bot die Befehle trotzdem als an ihn gerichtet erkennt, muss er davon in Kenntniss gesetzt werden'''
+-        if zeile['quelle']['nickname'] == self.currentnickname:
+-            self.currentnickname = zeile['inhalt'][0]
+-    
+-    def on_UNBEKANNT(self,zeile):
+-        '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+-        pass
+-
+-if __name__ == '__main__':
+-    if "--daemon" in sys.argv:
+-        # wir machen einen daemon
+-        if not (os.fork()):
+-            # eigene session erstellen
+-            os.setsid()
+-            sys.stdin.close()
+-            sys.stdout = open('/home/tiax/daemonlog','w')
+-            sys.stderr = sys.stdout
+-            if not (os.fork()):
+-                ppid = os.getppid()
+-                while (ppid != 1):
+-                    time.sleep(0.5)
+-                    ppid = os.getppid()
+-            else:
+-                os._exit(0)
+-        else:
+-            os.wait()
+-            sys.exit()
+-    GameSurge = ircverbindung(('irc.eu.gamesurge.net',6667),['pwn','own','pwn0r'])
++            return None
+
+
+

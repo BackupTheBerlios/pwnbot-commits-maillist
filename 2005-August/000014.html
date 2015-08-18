@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 27 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2027%20-%20trunk&In-Reply-To=%3CE1E9ntd-0005AW-2O%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000013.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 27 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2027%20-%20trunk&In-Reply-To=%3CE1E9ntd-0005AW-2O%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 27 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Mon Aug 29 19:58:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000013.html">[Pwnbot-commits] rev 26 - trunk
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#14">[ date ]</a>
+              <a href="thread.html#14">[ thread ]</a>
+              <a href="subject.html#14">[ subject ]</a>
+              <a href="author.html#14">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-08-29 19:58:11 +0200 (Mon, 29 Aug 2005)
+New Revision: 27
+
+Modified:
+   trunk/
+   trunk/ircbot.py
+Log:
+beta: Debug-Ausgabe durch logfiles ersetzt, ref #12
+
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   - *.pyc
+
+   + *.pyc
+*.log
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-28 11:29:15 UTC (rev 26)
++++ trunk/ircbot.py	2005-08-29 17:58:11 UTC (rev 27)
+@@ -14,6 +14,7 @@
+ import socket # f&#252;r die IRC-Verbindung
+ from sys import exit
+ from types import ListType
++from log import EinzelDateiLogger
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k&#252;mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+@@ -24,9 +25,10 @@
+     def __init__(self,server,nickname,ident=None,realname=None):
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+         self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
++        self.log = EinzelDateiLogger('debug.log')
+         self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+-    ##### Grundlegendes
++    # Grundlegendes
+ 
+     def _verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her
+@@ -52,9 +54,9 @@
+             self.so.connect((server,6667))
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+-        print 'DEBUG:  &gt;&gt; USER %s * * :%s' % (ident, realname)
++        # print 'DEBUG:  &gt;&gt; USER %s * * :%s' % (ident, realname)
+         self.so.send('NICK %s\r\n' % self.currentnickname)
+-        print 'DEBUG:  &gt;&gt; NICK %s' % self.currentnickname
++        # print 'DEBUG:  &gt;&gt; NICK %s' % self.currentnickname
+         self._verarbeite_reingehendes()
+ 
+     def _verarbeite_reingehendes(self):
+@@ -79,9 +81,9 @@
+             self._lesebuffer = temp.pop()
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+-                print 'DEBUG: &lt;&lt;%s' % zeile
++                self.log.log('Debug',&quot; &quot;.join(zeile))
++                #print 'DEBUG: &lt;&lt;%s' % zeile
+                 if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+-                    print 'DEBUG: &gt;&gt; PONG an den Server geschickt'
+                     self.so.send('PONG %s\r\n' % zeile[1])
+                 else:
+                     try:
+@@ -92,10 +94,10 @@
+ 
+     def _teile_zeile(self, zeile):
+         ''' teilt reingehendes in ein Dictionary auf
+-        ['quelle']['host'],['ident'],['nickname']
+-        ['event']
+-        ['ziel']
+-        ['inhalt']
++        ['quelle']['host'],['ident'],['nickname'] jeweils als string
++        ['event'] string
++        ['ziel'] string
++        ['inhalt'] string
+         '''
+         temp = {}
+         temp['quelle'] = {}
+@@ -114,10 +116,10 @@
+ 
+     def _teile_befehl(self,zeile):
+         '''teilt Befehle in ein Dictionary auf:
+-        befehl['quelle']['host'],['ident'],['nick']
+-        befehl['ziel']
+-        befehl['befehl']
+-        befehl['argumente']
++        befehl['quelle']['host'],['ident'],['nick'] jeweils als string
++        befehl['ziel'] string
++        befehl['befehl'] string
++        befehl['argumente'] liste
+ 
+         anschlie&#223;end wird &#252;berpr&#252;ft, ob kein potentiell &quot;gef&#228;hrlicher&quot; Name f&#252;r den Befehl verwendet worden ist
+         Dann wird der Befehlshandler aufgerufen. Befehlshandler sind Funktionen mit cmd_ vorne dran.
+@@ -133,7 +135,7 @@
+             zeile['inhalt'].reverse()
+         befehl['befehl'] = zeile['inhalt'][0]
+         befehl['argumente'] = zeile['inhalt'][1:]
+-        print 'DEBUG: &lt;&lt; Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
++        #print 'DEBUG: &lt;&lt; Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
+         if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'): #sicherheitscheck eventuell unn&#252;tz?
+             try:
+                 temp = getattr(self,'cmd_%s' % befehl['befehl'])
+@@ -170,6 +172,12 @@
+             self.quit('diediedie')
+         else:
+             self.notice(befehl['quelle']['nick'],'Du darfst den Bot nicht abschalten')
++    def cmd_ping(self,*befehl):
++        '''antwortet mit pong'''
++        if befehl['ziel'].startswith('#'):
++            self.msg(befehl['ziel'],'Pong')
++        else:
++            self.notice(befehl['quelle']['nickname'],'Pong')
+ 
+     # f&#252;r allen m&#246;glichen K&#228;se
+     def rawsend(self,rausgehendes):
+@@ -178,23 +186,27 @@
+         das, was geschickt werden soll
+         gibt auch nix zur&#252;ck, erspart uns aber die l&#228;stige Fehlersuche, wenn die Zeichen am Zeilenende vergessen worden sind.'''
+         self.so.send('%s\r\n' % rausgehendes)
++        self.log.log('Rausgehend','Raw: %s' % rausgehendes)
+ 
+     # konkrete Befehle
+ 
+     def join(self,channel,key=''):
+         '''betritt Channel'''
+-        print 'DEBUG: &gt;&gt; Joine %s' % channel
++        self.log.log('Verbindung','Channel %s betreten' % channel)
+         self.rawsend('JOIN %s %s' % (channel, key))
+ 
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus'''
+-        print 'Nachricht an %s: %s' % (ziel, nachricht)
+         self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
++        self.log('Rausgehendes','Message an %s:' % befehl['ziel'])
++    
+     def notice(self,ziel,nachricht):
+         '''schickt eine Nachricht als Notice raus'''
+         self.rawsend('NOTICE %s :%s' % (ziel,nachricht))
++        self.log.log('Rausgehendes','Notice an %s:' % befehl['ziel'])
++    
+     def quit(self,quitmessage):
+-        print 'DEBUG: &lt;&gt; Beende'
++        print 'Beende'
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
+@@ -208,12 +220,16 @@
+         try:
+             self.currentnickname = self.nicknames.pop(0)
+         except IndexError:
++            self.log.log('Verbindung','Nickname bereits belegt, alle Nicks sind ausgegangen')
+             exit('Nicknames sind ausgegangen')
++            self.log.log('Verbindng','Nickname war bereits belegt, %s wird versucht' % self.currentnickname)
+         self.rawsend('NICK %s' % self.currentnickname)
+ 
+     def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden
+         Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
++        self.log.log('Verbindung','Verbindung hergestellt')
++        print &quot;Verbindung hergestellt&quot;    
+         pass
+ 
+     # Textevents
+@@ -221,11 +237,8 @@
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+         if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
+-            print 'DEBUG: Befehl aufgeschnappt'
+             self._teile_befehl(zeile)
+-        # DEBUG
+-        elif 'ping' in zeile['inhalt']:
+-            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle']['nickname'])
++        self.log.log('Nachricht','%s &lt;%s!%s@%s&gt; %s' % (zeile['ziel'],zeile['quelle']['nickname'],zeile['quelle']['ident'],zeile['quelle']['host'],&quot; &quot;.join(zeile['inhalt'])))
+         print 'Nachricht von %s an %s: %s' % (zeile['quelle']['nickname'], zeile['ziel'], zeile['inhalt'])
+         # Ende DEBUG
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000013.html">[Pwnbot-commits] rev 26 - trunk
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#14">[ date ]</a>
+              <a href="thread.html#14">[ thread ]</a>
+              <a href="subject.html#14">[ subject ]</a>
+              <a href="author.html#14">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

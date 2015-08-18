@@ -1,0 +1,436 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r52 - branches/recodemitclasses
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r52%20-%20branches/recodemitclasses&In-Reply-To=%3C200603111931.k2BJVrOn018672%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000037.html">
+   <LINK REL="Next"  HREF="000039.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r52 - branches/recodemitclasses</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r52%20-%20branches/recodemitclasses&In-Reply-To=%3C200603111931.k2BJVrOn018672%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r52 - branches/recodemitclasses">tiax at berlios.de
+       </A><BR>
+    <I>Sat Mar 11 20:31:53 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000037.html">[Pwnbot-commits] r51 - branches/recodemitclasses
+</A></li>
+        <LI>Next message: <A HREF="000039.html">[Pwnbot-commits] r53 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-03-11 20:31:51 +0100 (Sat, 11 Mar 2006)
+New Revision: 52
+
+Added:
+   branches/recodemitclasses/befehle.py
+   branches/recodemitclasses/events.py
+Modified:
+   branches/recodemitclasses/ircbot.py
+   branches/recodemitclasses/xwars.py
+Log:
+ircbot voran
+
+Added: branches/recodemitclasses/befehle.py
+===================================================================
+--- branches/recodemitclasses/befehle.py	2006-03-06 12:15:24 UTC (rev 51)
++++ branches/recodemitclasses/befehle.py	2006-03-11 19:31:51 UTC (rev 52)
+@@ -0,0 +1,53 @@
++#!/usr/bin/env python
++# -*- coding: utf-8 -*-
++import xwars
++import logging
++
++logger = logging.getLogger('plugins')
++
++def _checkfortiax(event):
++    return event.quelle['ident'] == 'tiax' and event.quelle['host'] == 'victory-is-life.de'
++def quit(event):
++    if _checkfortiax(event):
++        event.parent.quit('Shutdown: %s' % ' '.join(event.befehl['argumente']))
++    else:
++        event.parent.notice(event.quelle['nick'],'Nicht berechtigt')
++
++def ping(event):
++    event.parent.notice(event.quelle['nick'],'Pong')
++
++def join(event):
++    if _checkfortiax(event):
++        event.parent.join(' '.join(event.befehl['argumente']))
++
++def part(event):
++    if _checkfortiax(event):
++        event.parent.part(' '.joing(event.befehl['argumente']))
++
++def say(event):
++    if _checkfortiax(event):
++        event.parent.msg(event.befehl['argumente'].pop(0),' '.join(event.befehl['argumente']))
++
++def parse(event):
++    print event.ziel
++    if event.ziel == '#tdm':
++        try:
++            url = event.befehl['argumente'][0]
++        except IndexError:
++            event.parent.notice(event.quelle['nick'],'Bitte URL angeben')
++        else:
++            logger.info('%s l&#228;sst %s parsen' % (event.quelle, url))
++            kampfbericht = xwars.kampfbericht(url)
++            try:
++                kampfbericht.analyze()
++            except (IOError), meldung:
++                self.notice(event.quelle['nick'],meldung)
++            except AttributeError:
++                self.notice(event.quelle['nick'],'Ung&#252;ltige URL')
++            else:
++                kampfbericht.manipulate()
++                kampfbericht.save()
++                event.parent.notice(event.quelle['nick'],'URL: ' + kampfbericht.dateiname)
++
++def unbekannt(event):
++    event.parent.notice(event.quelle['nick'],'Befehl nicht gefunden')
+
+Added: branches/recodemitclasses/events.py
+===================================================================
+--- branches/recodemitclasses/events.py	2006-03-06 12:15:24 UTC (rev 51)
++++ branches/recodemitclasses/events.py	2006-03-11 19:31:51 UTC (rev 52)
+@@ -0,0 +1,33 @@
++#!/usr/bin/env python
++# -*- coding: utf-8 -*-
++import logging
++import befehle
++logger = logging.getLogger()
++
++# Events f&#252;r den pwnbot
++def unbekannt(event):
++    event.Log()
++    pass
++
++def num_001(event):
++    '''Verbindung hergestellt'''
++    logger.debug('Verbindung erfolgreich etabliert')
++    event.parent.join('#tiax')
++
++def num_005(event):
++    '''Was der server unterst&#252;tzt'''
++
++def PRIVMSG(event):
++    '''eine Nachricht'''
++    event.Log()
++    event.Checkforcommand()
++    if hasattr(event,'befehl'):
++        befehl = getattr(befehle,event.befehl['befehl'],befehle.unbekannt)
++        befehl(event)
++
++def raw_443(event):
++    try:
++        event.parent.currentnickname = event.parent.nicknames.pop(0)
++    except IndexError:
++        logger.critical('Nicknames sind ausgegangen')
++        sys.exit('Nicknames ausgegangen')
+\ No newline at end of file
+
+Modified: branches/recodemitclasses/ircbot.py
+===================================================================
+--- branches/recodemitclasses/ircbot.py	2006-03-06 12:15:24 UTC (rev 51)
++++ branches/recodemitclasses/ircbot.py	2006-03-11 19:31:51 UTC (rev 52)
+@@ -14,21 +14,36 @@
+ # # ### ### ### ### ### ### ### ### ### ### ### #
+ 
+ # was an modulen gebraucht wird.
+-import socket # f&#252;r die IRC-Verbindung
++import socket
+ import sys
+ import time
+ import os
+ import xwars
++import logging
++import events
++from logging.handlers import RotatingFileHandler
+ 
++logger = None
++
++def logstart(size):
++    global logger
++    logger = logging.getLogger()
++    handler = RotatingFileHandler('ircbot.log','a',size * 1024, 5)
++    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s'))
++    logger.addHandler(handler)
++    logger.setLevel(logging.DEBUG)
++
++class IRCError(Exception):
++    pass
++
+ class ircevent(object):
+     '''Etwas im IRC ist passiert'''
+-    __slots__ = ['quelle','ziel','event','inhalt','parent']
++    __slots__ = ['quelle','ziel','event','inhalt','parent','befehl']
+     quelle = {}
+ 
+     def __init__(self,zeile,parent):
+         self.parent = parent
+         self._teile(zeile)
+-        print self
+ 
+     def __repr__(self):
+         return &quot;\n&quot;.join((&quot;Quelle:&quot; + str(self.quelle), &quot;Ziel: &quot; + self.ziel, &quot;Event: &quot; + self.event, &quot; &quot;.join(self.inhalt)))
+@@ -46,20 +61,99 @@
+             self.quelle['ident'] = quelle[1].split('@')[0]
+             self.quelle['host'] = quelle[1].split('@')[1]
+         self.event = zeile.pop(0)
++        if self.event.isdigit():
++            self.event = &quot;num_%s&quot; % self.event
+         self.ziel = zeile.pop(0)
+-        zeile[0] = zeile[0].lstrip(':')
++        if len(zeile) &gt; 0:
++            zeile[0] = zeile[0].lstrip(':')
+         self.inhalt = zeile
+ 
+     def Log(self):
+         '''schreibt das event ins logfile'''
+-        pass
++        if self.ziel == self.parent.currentnickname:
++            logkategorie = self.quelle['nick']
++        else:
++            logkategorie = self.ziel
++        INlogger = logging.getLogger('IN-%s' % logkategorie)
++        INlogger.debug('%s %s %s' % (str(self.quelle),self.event,&quot; &quot;.join(self.inhalt)))
+ 
++
+     def Checkforcommand(self):
+         '''&#220;berpr&#252;ft die den Inhalt auf einen Befehl und gibt den zur&#252;ck bei Erfolg, ansonsten nichts'''
+-        if self.inhalt[0].startswith(self.parent.nick) or self.ziel == self.parent.nick:
+-            if self.inhalt[0].startswith(self.parent.nick): self.inhalt.pop(0)
++        if self.inhalt[0].startswith(self.parent.currentnickname) or self.ziel == self.parent.currentnickname:
++            if self.inhalt[0].startswith(self.parent.currentnickname): self.inhalt.pop(0)
+             befehl = self.inhalt.pop(0)
+             argumente = self.inhalt
+-            return {'befehl':befehl,'argumente':argumente}
++            self.befehl = {'befehl':befehl,'argumente':argumente}
++
++class ircverbindung(object):
++    def __init__(self,server,nickname,ident=None,realname=None):
++        global logger
++        self._buffer = ''
++        logger.debug('Verbindung zu %s wird hergestellt' % server)
++        self.Verbinde(server,nickname,ident,realname)
++
++    def Verbinde(self,server,nickname,ident=None,realname=None):
++        self.nicknames = []
++        if type(nickname) == type([]):
++            self.nicknames.extend(nickname)
+         else:
+-            return False
+\ No newline at end of file
++            self.nicknames.append(nickname)
++        self.currentnickname = self.nicknames.pop(0)
++        ident = ident or self.currentnickname
++        realname = realname or self.currentnickname
++        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
++        try:
++            self._socket.connect(server)
++        except TypeError:
++            self._socket.connect((server,6667))
++        logger.info('Verbindung zu %s wurde hergestellt' % server)
++        self.rawsend('USER %s * * :%s' % (ident, realname))
++        self.rawsend('NICK %s' % self.currentnickname)
++        self._verarbeite()
++
++    def _verarbeite(self):
++        while True:
++            try:
++                self._buffer = self._socket.recv(8192)
++            except socket.error:
++                logger.critical('Verbindung unterbrochen')
++                break
++            if len(self._buffer) == 0:
++                logger.critical('Verbindung unterbrochen')
++                break
++            temp = self._buffer.split('\n')
++            self._buffer = temp.pop()
++            for zeile in temp:
++                zeile = zeile.rstrip()
++                if zeile.split()[0] == 'PING':
++                    self.rawsend('PONG %s' % zeile.split()[1])
++                else:
++                    event = ircevent(zeile,self)
++                    handler = getattr(events,event.event,events.unbekannt)
++                    handler(event)
++
++    def rawsend(self, zeile):
++        self._socket.send('%s\r\n' % zeile)
++
++    def join(self,channel,key=''):
++        logger.debug('Betrete %s' % channel)
++        self.rawsend('JOIN %s %s' % (channel,key))
++
++    def part(self,channel):
++        logger.debug('Verlasse %s' % channel)
++        self.rawsend('PART %s' % channel)
++
++    def quit(self,quitmessage='weq'):
++        logger.info('Beende die Verbindung')
++        self.rawsend('QUIT :%s' % quitmessage)
++
++    def msg(self,ziel,message):
++        logger.debug('Message an %s: %s' % (ziel, message))
++        self.rawsend('PRIVMSG %s :%s' % (ziel, message))
++
++    def notice(self,ziel,message):
++        logger.debug('Notice an %s: %s' % (ziel, message))
++        self.rawsend('NOTICE %s :%s' % (ziel, message))
++
++logstart(1024)
+\ No newline at end of file
+
+Modified: branches/recodemitclasses/xwars.py
+===================================================================
+--- branches/recodemitclasses/xwars.py	2006-03-06 12:15:24 UTC (rev 51)
++++ branches/recodemitclasses/xwars.py	2006-03-11 19:31:51 UTC (rev 52)
+@@ -9,7 +9,7 @@
+ # #############################################
+ # # Ein library f&#252;r verschiedene Funktionen im#
+ # # Browsergame X-Wars                        #
+-# # ### ### ### ### ### ### ### ### ### ### ### 
++# # ### ### ### ### ### ### ### ### ### ### ###
+ 
+ # was an Modulen gebraucht wird
+ from urllib import urlopen
+@@ -21,16 +21,16 @@
+ from locale import format, setlocale, LC_ALL
+ 
+ class kampfbericht:
+-    '''X-Wars Kampfberichte sind ein tolles Objekt. 
++    '''X-Wars Kampfberichte sind ein tolles Objekt.
+ 
+-    Erwartet: URL als String, sollte mit dem in der Konfiguration definierten 
++    Erwartet: URL als String, sollte mit dem in der Konfiguration definierten
+     String anfangen, ist sicherheitstechnisch wohl eine ganz gute Idee'''
+-    
++
+     # Konfiguration
+     # Mit was soll die URl anfangen?
+     urlstart = '<A HREF="http://reports.xwars.gamigo.de/">http://reports.xwars.gamigo.de/</A>'
+-    cachedir = '/home/tiax/xwars/parser/cache/'
+-    savedir = '/home/tiax/xwars/parser/save/'
++    cachedir = 'C:\\Dokumente und Einstellungen\\tiax\\Desktop\\xwars\\cache\\'
++    savedir = 'C:\\Dokumente und Einstellungen\\tiax\\Desktop\\xwars\\save\\'
+ 
+ 
+     def __init__(self,url):
+@@ -39,9 +39,9 @@
+             raise IOError('Cachedir existiert nicht')
+         if not path.isdir(self.savedir):
+             raise IOError('Savedir existiert nicht')
+-        self.startbasis = {} # damit die Flottenfunktionen halbwegs 
++        self.startbasis = {} # damit die Flottenfunktionen halbwegs
+         self.zielbasis = {}  # voneinander aufgerufen werden koennen
+-        self.url = url    
++        self.url = url
+ 
+     def _get_id(self):
+         '''&#252;berpr&#252;ft kampfbericht-urls auf ihre g&#252;ltigkeit'''
+@@ -54,9 +54,9 @@
+             raise IOError('Ung&#252;ltige URL')
+         if not self.id:
+             raise IOError('Ung&#252;ltige URL')
+-        
++
+     def _get_kb(self):
+-        '''holt den kampfbericht hervor 
++        '''holt den kampfbericht hervor
+         &#252;berpr&#252;ft zun&#228;chst, ob er vielleicht bereits abgerufen worden ist
+         und l&#228;dt dann aus dem cache'''
+         if path.isfile(self.cachedir + self.id):
+@@ -81,7 +81,7 @@
+         self.zielbasis['Allianz'], \
+         self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
+         self.zeit = strptime(&quot; &quot;.join(uhrzeitregexp.search(self.bericht).groups()), '%d.%m.%Y %H:%M:%S')
+-        
++
+     def _get_werte(self):
+         '''Holt sich die Flottenwerte, Verluste noch nicht'''
+         flottenregexp = compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
+@@ -97,11 +97,11 @@
+         for item in flotten:
+             AttVorher += int((item[0]) or 0) # or 0 ist notwendig
+             DefVorher += int((item[1]) or 0) # verlorene Flotten sind bei X-Wars
+-            AttNachher += int((item[2]) or 0) # nicht 0 
++            AttNachher += int((item[2]) or 0) # nicht 0
+             DefNachher += int((item[3]) or 0) # sondern nix.
+         self.zielbasis['Flotte'] = (AttVorher, DefVorher, AttNachher, DefNachher)
+         self.zielbasis['MP'] = (AttVorher + DefVorher) / 200.0
+-        
++
+     def _get_verluste(self):
+         '''Holt sich die Verluste. Es ist sinnvoll, erst die Werte zu holen'''
+         StartbasisVerluste = (abs(self.startbasis['Flotte'][0] - self.startbasis['Flotte'][2]), abs(self.startbasis['Flotte'][1] - self.startbasis['Flotte'][3]))
+@@ -130,7 +130,7 @@
+ 		        &lt;td xwidth=&quot;326px&quot; colspan=&quot;2&quot; xbgcolor=&quot;#2A2A2A&quot;&gt;&lt;font color=&quot;#222222&quot;&gt;TDM Warreport v1 py&lt;/td&gt;
+ 		  &lt;/tr&gt;
+                &lt;/table&gt;
+-		    
++
+ 		&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;
+ 		&lt;tr&gt;&lt;td bgcolor=&quot;#2A2A2A&quot; height=&quot;9px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
+ 		&lt;tr&gt;
+@@ -196,7 +196,7 @@
+     def _make_namestring(self):
+         '''Erstellt einen Dateinamentauglichen Namen f&#252;r de Kampfbericht'''
+         self.namestring = '%(Angreiferallianz)s%(Angreifername)s-%(Verteidigerallianz)s-%(Verteidigername)s-%(Zeit)s' % {'Angreiferallianz':self.startbasis['Allianz'],'Angreifername':self.startbasis['Name'],'Verteidigerallianz':self.zielbasis['Allianz'],'Verteidigername':self.zielbasis['Name'],'Zeit':strftime('%Y%m%d-%H%M',self.zeit)}
+-        
++
+     def _insert_template(self):
+         '''f&#252;gt das ausgef&#252;llte Template in den Kampfbericht ein'''
+         berichtliste = self.bericht.splitlines()
+@@ -230,7 +230,7 @@
+         bericht = bericht.replace('Schiffe von','Schiffe')
+         bericht = bericht.replace('Verteidigung auf','Verteidigung')
+         self.bearbeiteterbericht = bericht.splitlines()
+-        
++
+     def save(self):
+         '''Den Bericht ins Dateisystem speichern'''
+         self.dateiname = self.savedir + self.namestring.replace('[','').replace(']','-') + '.html'
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000037.html">[Pwnbot-commits] r51 - branches/recodemitclasses
+</A></li>
+	<LI>Next message: <A HREF="000039.html">[Pwnbot-commits] r53 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

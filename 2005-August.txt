@@ -1,0 +1,771 @@
+From tiax at tiax.info  Tue Aug  2 05:32:31 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Tue, 02 Aug 2005 05:32:31 +0200
+Subject: [Pwnbot-commits] rev 20 - trunk
+Message-ID: <E1DznW3-0006WB-P5@tiax.info>
+
+Author: tiax
+Date: 2005-08-02 05:32:28 +0200 (Tue, 02 Aug 2005)
+New Revision: 20
+
+Modified:
+   trunk/ircbot.py
+Log:
+kleine ?\195?\164nderungen f?\195?\188r private funktionsnamen
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-28 18:02:22 UTC (rev 19)
++++ trunk/ircbot.py	2005-08-02 03:32:28 UTC (rev 20)
+@@ -23,12 +23,12 @@
+ class ircverbindung:
+     def __init__(self,server,nickname,ident=None,realname=None):
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+-        self.lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+-        self.verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
++        self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
++        self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+     ##### Grundlegendes
+ 
+-    def verbinde(self,server,nickname,ident=None,realname=None):
++    def _verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her
+         erwartet:
+         server entweder als string (url) oder tuple (url, port)
+@@ -68,15 +68,15 @@
+ 
+         while 1:
+             try:
+-                self.lesebuffer = self.so.recv(8192)
++                self._lesebuffer = self.so.recv(8192)
+             except socket.error:
+                 print "DEBUG: <> Verbindung geschlossen"
+                 break
+-            if len(self.lesebuffer) == 0:
++            if len(self._lesebuffer) == 0:
+                 print "DEBUG:<> Verbindung geschlossen"
+                 break
+-            temp = self.lesebuffer.split('\n')
+-            self.lesebuffer = temp.pop()
++            temp = self._lesebuffer.split('\n')
++            self._lesebuffer = temp.pop()
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+                 print 'DEBUG: <<%s' % zeile
+
+
+
+From tiax at tiax.info  Tue Aug  2 05:41:36 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Tue, 02 Aug 2005 05:41:36 +0200
+Subject: [Pwnbot-commits] rev 21 - trunk
+Message-ID: <E1Dzneq-0001SM-EA@tiax.info>
+
+Author: tiax
+Date: 2005-08-02 05:41:34 +0200 (Tue, 02 Aug 2005)
+New Revision: 21
+
+Added:
+   trunk/log.py
+Log:
+log.py erstellt, simpler Logger, zur Zeit mit EinzelDateiLogger
+
+
+Added: trunk/log.py
+===================================================================
+--- trunk/log.py	2005-08-02 03:32:28 UTC (rev 20)
++++ trunk/log.py	2005-08-02 03:41:34 UTC (rev 21)
+@@ -0,0 +1,22 @@
++#!/usr/bin/env python
++# -*- coding: iso8859-15 -*-
++'''stellt mehrere log-funktionen zur Verf?gung'''
++
++from sys import exit
++from time import strftime
++class EinzelDateiLogger:
++    def __init__(self,dateiname):
++        '''?ffnet die Datei'''
++        try:
++            self.logdatei = open(dateiname,'a',1)
++        except IOError:
++            exit('Verzeichnis nicht vorhanden')
++
++    def log(self,kategorie,nachricht):
++        '''erstellt erst ein Datum und schreibt dann in die Datei'''
++        datum = strftime('%Y-%m-%d %H:%M:%S')
++        self.logdatei.write('%s|%s|%s\n' % (datum,kategorie,nachricht.replace('|','/')))
++    
++    def flush(self):
++        '''sicherheitshalber noch das flush-feature weiterreichen'''
++        self.logdatei.flush()
+
+
+
+From tiax at tiax.info  Tue Aug  2 05:48:45 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Tue, 02 Aug 2005 05:48:45 +0200
+Subject: [Pwnbot-commits] rev 22 - trunk
+Message-ID: <E1Dznll-0008TT-Ss@tiax.info>
+
+Author: tiax
+Date: 2005-08-02 05:48:44 +0200 (Tue, 02 Aug 2005)
+New Revision: 22
+
+Modified:
+   trunk/log.py
+Log:
+docstrings aktualisiert
+
+
+Modified: trunk/log.py
+===================================================================
+--- trunk/log.py	2005-08-02 03:41:34 UTC (rev 21)
++++ trunk/log.py	2005-08-02 03:48:44 UTC (rev 22)
+@@ -6,14 +6,22 @@
+ from time import strftime
+ class EinzelDateiLogger:
+     def __init__(self,dateiname):
+-        '''?ffnet die Datei'''
++        '''?ffnet die Datei
++
++        erwartet: dateiname des Logfiles. Das Verzeichnis in dem es liegt, muss existieren!'''
+         try:
+             self.logdatei = open(dateiname,'a',1)
+         except IOError:
+             exit('Verzeichnis nicht vorhanden')
+ 
+     def log(self,kategorie,nachricht):
+-        '''erstellt erst ein Datum und schreibt dann in die Datei'''
++        '''erstellt erst ein Datum und schreibt dann in die Datei
++        
++        erwartet: 
++        kategorie als string
++        nachricht als string
++        
++        gibt zur?ck: nichts, schreibt aber im Format YYYY-MM-DD HH:MM:SS | Kategorie | Hier die Nachricht in die Datei. Dabei werden in der Nachricht alle | durch / ersetzt.'''
+         datum = strftime('%Y-%m-%d %H:%M:%S')
+         self.logdatei.write('%s|%s|%s\n' % (datum,kategorie,nachricht.replace('|','/')))
+     
+
+
+
+From tiax at tiax.info  Fri Aug 26 03:08:13 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Fri, 26 Aug 2005 03:08:13 +0200
+Subject: [Pwnbot-commits] rev 23 - trunk
+Message-ID: <E1E8ShZ-00069x-Op@tiax.info>
+
+Author: tiax
+Date: 2005-08-26 03:08:11 +0200 (Fri, 26 Aug 2005)
+New Revision: 23
+
+Modified:
+   trunk/ircbot.py
+Log:
+befehle werden rudiment?\195?\164r behandelt, closes #11 
+erstmal
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-02 03:48:44 UTC (rev 22)
++++ trunk/ircbot.py	2005-08-26 01:08:11 UTC (rev 23)
+@@ -43,8 +43,8 @@
+         else:
+             self.nicknames.extend(nickname)
+         self.currentnickname = self.nicknames.pop(0)
+-        ident = ident or nickname
+-        realname = realname or nickname
++        ident = ident or self.currentnickname
++        realname = realname or self.currentnickname
+         self.so = socket.socket()
+         try:
+             self.so.connect(server)
+@@ -80,18 +80,23 @@
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+                 print 'DEBUG: <<%s' % zeile
+-                if zeile[0] == 'PING':
++                if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+                     print 'DEBUG: >> PONG an den Server geschickt'
+                     self.so.send('PONG %s\r\n' % zeile[1])
+                 else:
+                     try:
+                         befehl = getattr(self,'on_%s' % zeile[1])
+-                        befehl(self._chopit(zeile))
++                        befehl(self._teile_zeile(zeile))
+                     except AttributeError:
+-                        self.on_UNBEKANNT(self._chopit(zeile))
++                        self.on_UNBEKANNT(self._teile_zeile(zeile))
+ 
+-    def _chopit(self, zeile):
+-        ''' teilt reingehendes in ein Dictionary von Quelle, Event, Ziel und Inhalt auf'''
++    def _teile_zeile(self, zeile):
++        ''' teilt reingehendes in ein Dictionary auf
++        ['quelle']['host'],['ident'],['nickname']
++        ['event']
++        ['ziel']
++        ['inhalt']
++        '''
+         temp = {}
+         temp['quelle'] = {}
+         if '@' in zeile[0]:
+@@ -107,6 +112,33 @@
+             temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
+         return temp
+ 
++    def _teile_befehl(self,zeile):
++        '''teilt Befehle in ein Dictionary auf:
++        befehl['quelle']['host'],['ident'],['nick']
++        befehl['ziel']
++        befehl['befehl']
++        befehl['argumente']
++
++        '''
++        befehl = {}
++        befehl['quelle'] = zeile['quelle']
++        befehl['ziel'] = zeile['ziel']
++        if zeile['inhalt'][0].startswith(self.currentnickname):
++            zeile['inhalt'].reverse()
++            zeile['inhalt'].pop()
++            zeile['inhalt'].reverse()
++        befehl['befehl'] = zeile['inhalt'][0]
++        befehl['argumente'] = zeile['inhalt'][1:]
++        print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
++        if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'):
++            try:
++                temp = getattr(self,befehl['befehl'])
++                temp(befehl)
++            except AttributeError:
++                self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++        else:
++            self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -125,7 +157,9 @@
+         '''schickt Nachrichten raus'''
+         print 'Nachricht an %s: %s' % (ziel, nachricht)
+         self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
+-
++    def notice(self,ziel,nachricht):
++        '''schickt eine Nachricht als Notice raus'''
++        self.rawsend('NOTICE %s :%s' % (ziel,nachricht))
+     def quit(self,quitmessage):
+         print 'DEBUG: <> Beende'
+         self.rawsend('quit :%s' % quitmessage)
+@@ -134,7 +168,7 @@
+     ##### Events
+ 
+     ## Numerics
+-    
++
+     def on_433(self,zeile):
+         ''' der nickname ist bereits belegt
+         wir holen jetzt weitere nicks aus der anfangs erstellten Liste. Falls die leer wird, beenden wir den Bot'''
+@@ -150,9 +184,12 @@
+         self.join('#tiax')
+ 
+     ## Textevents
+-    
++
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
++        if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
++            print 'DEBUG: Befehl aufgeschnappt'
++            self._teile_befehl(zeile)
+         # DEBUG
+         if 'die' in zeile['inhalt']:
+             self.quit('diediedie')
+
+
+
+From tiax at tiax.info  Fri Aug 26 03:20:21 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Fri, 26 Aug 2005 03:20:21 +0200
+Subject: [Pwnbot-commits] rev 24 - trunk
+Message-ID: <E1E8StI-0007ZB-VD@tiax.info>
+
+Author: tiax
+Date: 2005-08-26 03:20:17 +0200 (Fri, 26 Aug 2005)
+New Revision: 24
+
+Modified:
+   trunk/ircbot.py
+Log:
+kleinere probleme mit dem repo, jetzt solved
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-26 01:08:11 UTC (rev 23)
++++ trunk/ircbot.py	2005-08-26 01:20:17 UTC (rev 24)
+@@ -112,6 +112,7 @@
+             temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
+         return temp
+ 
++<<<<<<< .mine
+     def _teile_befehl(self,zeile):
+         '''teilt Befehle in ein Dictionary auf:
+         befehl['quelle']['host'],['ident'],['nick']
+@@ -130,6 +131,34 @@
+         befehl['befehl'] = zeile['inhalt'][0]
+         befehl['argumente'] = zeile['inhalt'][1:]
+         print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
++        if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'): #sicherheitscheck eventuell unn?tz?
++            try:
++                temp = getattr(self,'cmd_%s' % befehl['befehl'])
++                temp(befehl)
++            except AttributeError:
++                self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++        else:
++            self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
++
++=======
++    def _teile_befehl(self,zeile):
++        '''teilt Befehle in ein Dictionary auf:
++        befehl['quelle']['host'],['ident'],['nick']
++        befehl['ziel']
++        befehl['befehl']
++        befehl['argumente']
++
++        '''
++        befehl = {}
++        befehl['quelle'] = zeile['quelle']
++        befehl['ziel'] = zeile['ziel']
++        if zeile['inhalt'][0].startswith(self.currentnickname):
++            zeile['inhalt'].reverse()
++            zeile['inhalt'].pop()
++            zeile['inhalt'].reverse()
++        befehl['befehl'] = zeile['inhalt'][0]
++        befehl['argumente'] = zeile['inhalt'][1:]
++        print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
+         if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'):
+             try:
+                 temp = getattr(self,befehl['befehl'])
+@@ -139,6 +168,7 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
++>>>>>>> .r23
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -200,4 +230,4 @@
+ 
+     def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+-        pass
++        pass
+\ No newline at end of file
+
+
+
+From tiax at tiax.info  Fri Aug 26 03:24:51 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Fri, 26 Aug 2005 03:24:51 +0200
+Subject: [Pwnbot-commits] rev 25 - trunk
+Message-ID: <E1E8Sxf-0000BB-Cs@tiax.info>
+
+Author: tiax
+Date: 2005-08-26 03:24:49 +0200 (Fri, 26 Aug 2005)
+New Revision: 25
+
+Modified:
+   trunk/ircbot.py
+Log:
+ups, jetzt aber
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-26 01:20:17 UTC (rev 24)
++++ trunk/ircbot.py	2005-08-26 01:24:49 UTC (rev 25)
+@@ -112,7 +112,6 @@
+             temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
+         return temp
+ 
+-<<<<<<< .mine
+     def _teile_befehl(self,zeile):
+         '''teilt Befehle in ein Dictionary auf:
+         befehl['quelle']['host'],['ident'],['nick']
+@@ -140,35 +139,6 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
+-=======
+-    def _teile_befehl(self,zeile):
+-        '''teilt Befehle in ein Dictionary auf:
+-        befehl['quelle']['host'],['ident'],['nick']
+-        befehl['ziel']
+-        befehl['befehl']
+-        befehl['argumente']
+-
+-        '''
+-        befehl = {}
+-        befehl['quelle'] = zeile['quelle']
+-        befehl['ziel'] = zeile['ziel']
+-        if zeile['inhalt'][0].startswith(self.currentnickname):
+-            zeile['inhalt'].reverse()
+-            zeile['inhalt'].pop()
+-            zeile['inhalt'].reverse()
+-        befehl['befehl'] = zeile['inhalt'][0]
+-        befehl['argumente'] = zeile['inhalt'][1:]
+-        print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
+-        if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'):
+-            try:
+-                temp = getattr(self,befehl['befehl'])
+-                temp(befehl)
+-            except AttributeError:
+-                self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+-        else:
+-            self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+-
+->>>>>>> .r23
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -230,4 +200,4 @@
+ 
+     def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+-        pass
+\ No newline at end of file
++        pass
+
+
+
+From tiax at tiax.info  Sun Aug 28 13:29:17 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Sun, 28 Aug 2005 13:29:17 +0200
+Subject: [Pwnbot-commits] rev 26 - trunk
+Message-ID: <E1E9LLh-0004h8-AY@tiax.info>
+
+Author: tiax
+Date: 2005-08-28 13:29:15 +0200 (Sun, 28 Aug 2005)
+New Revision: 26
+
+Modified:
+   trunk/
+   trunk/ircbot.py
+Log:
+Nochmal den Befehlsdispatcher etwas verbessert und Debugcode zu normalen Befehlen gemacht. Standardbefehle erg?\195?\164nzt. ref #11
+
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   + *.pyc
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-26 01:24:49 UTC (rev 25)
++++ trunk/ircbot.py	2005-08-28 11:29:15 UTC (rev 26)
+@@ -1,14 +1,14 @@
+ #!/usr/bin/env python
+ # -*- coding: iso8859-15 -*-
+ 
+-### ### ### ### ### ### ### ### ### ### ### ### ###
+-### ircbot                                      ###
+-###################################################
+-### weils keinen ircbot gab, der mir zusagte,   ###
+-### habe ich einen eigenen geschrieben.         ###
+-### das macht ihn nicht beser als die andren,   ###
+-### er tut aber genau das, was ich will.        ###
+-### ### ### ### ### ### ### ### ### ### ### ### ###
++# ## ### ### ### ### ### ### ### ### ### ### ### # #
++# ircbot                                        # #
++# ############################################### #
++# # weils keinen ircbot gab, der mir zusagte,   # #
++# # habe ich einen eigenen geschrieben.         # #
++# # das macht ihn nicht beser als die andren,   # #
++# # er tut aber genau das, was ich will.        # #
++# # ### ### ### ### ### ### ### ### ### ### ### # #
+ 
+ # was an modulen gebraucht wird.
+ import socket # f?r die IRC-Verbindung
+@@ -119,6 +119,10 @@
+         befehl['befehl']
+         befehl['argumente']
+ 
++        anschlie?end wird ?berpr?ft, ob kein potentiell "gef?hrlicher" Name f?r den Befehl verwendet worden ist
++        Dann wird der Befehlshandler aufgerufen. Befehlshandler sind Funktionen mit cmd_ vorne dran.
++        Wenn es eine entsprechende Funktion existiert, wird "befehl" als ganzes ?bergeben.
++
+         '''
+         befehl = {}
+         befehl['quelle'] = zeile['quelle']
+@@ -139,6 +143,35 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
++    # Befehlshandler
++    def cmd_debug(self,befehl):
++        '''ein fallback zum analysieren von befehlsketten'''
++        self.notice(befehl['quelle']['nick'],befehl)
++
++    def cmd_join(self, befehl):
++        '''betritt Channel
++
++        Interpretiert die Argumente des Befehls als Liste von Channeln, die nacheinander betreten werden'''
++        for channel in befehl['argumente']:
++            self.join(channel)
++
++    def cmd_say(self, befehl):
++        '''sagt etwas in einem Channel
++
++        Als erstes Argument wird das Ziel der Nachricht (Channel oder Nickname) hergenommen, der ganze Rest als Nachricht'''
++        ziel = befehl['argumente'][0]
++        nachricht = " ".join(befehl['argumente'][1:])
++        self.msg(ziel,nachricht)
++
++    def cmd_die(self,*befehl):
++        '''schaltet den Bot ab'''
++        befehl = befehl[0]
++        if befehl['quelle']['ident'] == 'tiax':
++            self.quit('diediedie')
++        else:
++            self.notice(befehl['quelle']['nick'],'Du darfst den Bot nicht abschalten')
++
++    # f?r allen m?glichen K?se
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -146,7 +179,7 @@
+         gibt auch nix zur?ck, erspart uns aber die l?stige Fehlersuche, wenn die Zeichen am Zeilenende vergessen worden sind.'''
+         self.so.send('%s\r\n' % rausgehendes)
+ 
+-    ##### konkrete Befehle
++    # konkrete Befehle
+ 
+     def join(self,channel,key=''):
+         '''betritt Channel'''
+@@ -165,9 +198,9 @@
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
+-    ##### Events
++    # Events
+ 
+-    ## Numerics
++    # Numerics
+ 
+     def on_433(self,zeile):
+         ''' der nickname ist bereits belegt
+@@ -181,9 +214,9 @@
+     def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden
+         Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
+-        self.join('#tiax')
++        pass
+ 
+-    ## Textevents
++    # Textevents
+ 
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+@@ -191,8 +224,6 @@
+             print 'DEBUG: Befehl aufgeschnappt'
+             self._teile_befehl(zeile)
+         # DEBUG
+-        if 'die' in zeile['inhalt']:
+-            self.quit('diediedie')
+         elif 'ping' in zeile['inhalt']:
+             self.msg(zeile['ziel'],'%s: pong' % zeile['quelle']['nickname'])
+         print 'Nachricht von %s an %s: %s' % (zeile['quelle']['nickname'], zeile['ziel'], zeile['inhalt'])
+
+
+
+From tiax at tiax.info  Mon Aug 29 19:58:13 2005
+From: tiax at tiax.info (tiax at tiax.info)
+Date: Mon, 29 Aug 2005 19:58:13 +0200
+Subject: [Pwnbot-commits] rev 27 - trunk
+Message-ID: <E1E9ntd-0005AW-2O@tiax.info>
+
+Author: tiax
+Date: 2005-08-29 19:58:11 +0200 (Mon, 29 Aug 2005)
+New Revision: 27
+
+Modified:
+   trunk/
+   trunk/ircbot.py
+Log:
+beta: Debug-Ausgabe durch logfiles ersetzt, ref #12
+
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   - *.pyc
+
+   + *.pyc
+*.log
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-28 11:29:15 UTC (rev 26)
++++ trunk/ircbot.py	2005-08-29 17:58:11 UTC (rev 27)
+@@ -14,6 +14,7 @@
+ import socket # f?r die IRC-Verbindung
+ from sys import exit
+ from types import ListType
++from log import EinzelDateiLogger
+ # es gibt mehrere Klassen. Die Verbindung als solche ist wohl die wichtigste und
+ # wird als erstes aufgerufen. Sie stellt die Verbindung her und k?mmert sich um
+ # alles, was rein kommt. Nach der Verarbeitung der rohen Zeile wird ggf. eine
+@@ -24,9 +25,10 @@
+     def __init__(self,server,nickname,ident=None,realname=None):
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+         self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
++        self.log = EinzelDateiLogger('debug.log')
+         self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+-    ##### Grundlegendes
++    # Grundlegendes
+ 
+     def _verbinde(self,server,nickname,ident=None,realname=None):
+         '''stellt die Verbindung zum Server her
+@@ -52,9 +54,9 @@
+             self.so.connect((server,6667))
+         # self.so.settimeout(5)
+         self.so.send('USER %s * * :%s\r\n' % (ident, realname))
+-        print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
++        # print 'DEBUG:  >> USER %s * * :%s' % (ident, realname)
+         self.so.send('NICK %s\r\n' % self.currentnickname)
+-        print 'DEBUG:  >> NICK %s' % self.currentnickname
++        # print 'DEBUG:  >> NICK %s' % self.currentnickname
+         self._verarbeite_reingehendes()
+ 
+     def _verarbeite_reingehendes(self):
+@@ -79,9 +81,9 @@
+             self._lesebuffer = temp.pop()
+             for zeile in temp:
+                 zeile = zeile.rstrip().split()
+-                print 'DEBUG: <<%s' % zeile
++                self.log.log('Debug'," ".join(zeile))
++                #print 'DEBUG: <<%s' % zeile
+                 if zeile[0] == 'PING': # das wird hardcoded, weil man sonst recht einfach vom server fliegt, wenn das nicht geht. Keinen Unfug damit machen!
+-                    print 'DEBUG: >> PONG an den Server geschickt'
+                     self.so.send('PONG %s\r\n' % zeile[1])
+                 else:
+                     try:
+@@ -92,10 +94,10 @@
+ 
+     def _teile_zeile(self, zeile):
+         ''' teilt reingehendes in ein Dictionary auf
+-        ['quelle']['host'],['ident'],['nickname']
+-        ['event']
+-        ['ziel']
+-        ['inhalt']
++        ['quelle']['host'],['ident'],['nickname'] jeweils als string
++        ['event'] string
++        ['ziel'] string
++        ['inhalt'] string
+         '''
+         temp = {}
+         temp['quelle'] = {}
+@@ -114,10 +116,10 @@
+ 
+     def _teile_befehl(self,zeile):
+         '''teilt Befehle in ein Dictionary auf:
+-        befehl['quelle']['host'],['ident'],['nick']
+-        befehl['ziel']
+-        befehl['befehl']
+-        befehl['argumente']
++        befehl['quelle']['host'],['ident'],['nick'] jeweils als string
++        befehl['ziel'] string
++        befehl['befehl'] string
++        befehl['argumente'] liste
+ 
+         anschlie?end wird ?berpr?ft, ob kein potentiell "gef?hrlicher" Name f?r den Befehl verwendet worden ist
+         Dann wird der Befehlshandler aufgerufen. Befehlshandler sind Funktionen mit cmd_ vorne dran.
+@@ -133,7 +135,7 @@
+             zeile['inhalt'].reverse()
+         befehl['befehl'] = zeile['inhalt'][0]
+         befehl['argumente'] = zeile['inhalt'][1:]
+-        print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
++        #print 'DEBUG: << Befehl von %s an %s: %s mit Argumenten %s' % (befehl['quelle'],befehl['ziel'],befehl['befehl'],befehl['argumente'])
+         if not befehl['befehl'].startswith('_') or befehl['befehl'].startswith('on_'): #sicherheitscheck eventuell unn?tz?
+             try:
+                 temp = getattr(self,'cmd_%s' % befehl['befehl'])
+@@ -170,6 +172,12 @@
+             self.quit('diediedie')
+         else:
+             self.notice(befehl['quelle']['nick'],'Du darfst den Bot nicht abschalten')
++    def cmd_ping(self,*befehl):
++        '''antwortet mit pong'''
++        if befehl['ziel'].startswith('#'):
++            self.msg(befehl['ziel'],'Pong')
++        else:
++            self.notice(befehl['quelle']['nickname'],'Pong')
+ 
+     # f?r allen m?glichen K?se
+     def rawsend(self,rausgehendes):
+@@ -178,23 +186,27 @@
+         das, was geschickt werden soll
+         gibt auch nix zur?ck, erspart uns aber die l?stige Fehlersuche, wenn die Zeichen am Zeilenende vergessen worden sind.'''
+         self.so.send('%s\r\n' % rausgehendes)
++        self.log.log('Rausgehend','Raw: %s' % rausgehendes)
+ 
+     # konkrete Befehle
+ 
+     def join(self,channel,key=''):
+         '''betritt Channel'''
+-        print 'DEBUG: >> Joine %s' % channel
++        self.log.log('Verbindung','Channel %s betreten' % channel)
+         self.rawsend('JOIN %s %s' % (channel, key))
+ 
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus'''
+-        print 'Nachricht an %s: %s' % (ziel, nachricht)
+         self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
++        self.log('Rausgehendes','Message an %s:' % befehl['ziel'])
++    
+     def notice(self,ziel,nachricht):
+         '''schickt eine Nachricht als Notice raus'''
+         self.rawsend('NOTICE %s :%s' % (ziel,nachricht))
++        self.log.log('Rausgehendes','Notice an %s:' % befehl['ziel'])
++    
+     def quit(self,quitmessage):
+-        print 'DEBUG: <> Beende'
++        print 'Beende'
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
+@@ -208,12 +220,16 @@
+         try:
+             self.currentnickname = self.nicknames.pop(0)
+         except IndexError:
++            self.log.log('Verbindung','Nickname bereits belegt, alle Nicks sind ausgegangen')
+             exit('Nicknames sind ausgegangen')
++            self.log.log('Verbindng','Nickname war bereits belegt, %s wird versucht' % self.currentnickname)
+         self.rawsend('NICK %s' % self.currentnickname)
+ 
+     def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden
+         Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
++        self.log.log('Verbindung','Verbindung hergestellt')
++        print "Verbindung hergestellt"    
+         pass
+ 
+     # Textevents
+@@ -221,11 +237,8 @@
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+         if zeile['inhalt'][0].startswith(self.currentnickname) or zeile['ziel'] == self.currentnickname: # der bot wird entweder angesprochen oder er kriegt eine private message
+-            print 'DEBUG: Befehl aufgeschnappt'
+             self._teile_befehl(zeile)
+-        # DEBUG
+-        elif 'ping' in zeile['inhalt']:
+-            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle']['nickname'])
++        self.log.log('Nachricht','%s <%s!%s@%s> %s' % (zeile['ziel'],zeile['quelle']['nickname'],zeile['quelle']['ident'],zeile['quelle']['host']," ".join(zeile['inhalt'])))
+         print 'Nachricht von %s an %s: %s' % (zeile['quelle']['nickname'], zeile['ziel'], zeile['inhalt'])
+         # Ende DEBUG
+ 
+
+
+

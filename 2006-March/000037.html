@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r51 - branches/recodemitclasses
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r51%20-%20branches/recodemitclasses&In-Reply-To=%3C200603061215.k26CFPW2032468%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000038.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r51 - branches/recodemitclasses</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r51%20-%20branches/recodemitclasses&In-Reply-To=%3C200603061215.k26CFPW2032468%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r51 - branches/recodemitclasses">tiax at berlios.de
+       </A><BR>
+    <I>Mon Mar  6 13:15:25 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000038.html">[Pwnbot-commits] r52 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-03-06 13:15:24 +0100 (Mon, 06 Mar 2006)
+New Revision: 51
+
+Modified:
+   branches/recodemitclasses/ircbot.py
+Log:
+repr
+
+Modified: branches/recodemitclasses/ircbot.py
+===================================================================
+--- branches/recodemitclasses/ircbot.py	2006-02-23 00:44:14 UTC (rev 50)
++++ branches/recodemitclasses/ircbot.py	2006-03-06 12:15:24 UTC (rev 51)
+@@ -24,16 +24,20 @@
+     '''Etwas im IRC ist passiert'''
+     __slots__ = ['quelle','ziel','event','inhalt','parent']
+     quelle = {}
+-    
++
+     def __init__(self,zeile,parent):
+         self.parent = parent
+         self._teile(zeile)
++        print self
+ 
++    def __repr__(self):
++        return &quot;\n&quot;.join((&quot;Quelle:&quot; + str(self.quelle), &quot;Ziel: &quot; + self.ziel, &quot;Event: &quot; + self.event, &quot; &quot;.join(self.inhalt)))
++
+     def _teile(self,zeile):
+         '''teilt die Zeile in Attribute f&#252;r die Klase auf'''
+         zeile = zeile.split()
+         quelle = zeile.pop(0).split('!')
+-        self.quelle['nick'] = quelle[0]
++        self.quelle['nick'] = quelle[0].lstrip(':')
+         try:
+             self.quelle['ident'] = quelle[1]
+         except IndexError:
+@@ -43,11 +47,12 @@
+             self.quelle['host'] = quelle[1].split('@')[1]
+         self.event = zeile.pop(0)
+         self.ziel = zeile.pop(0)
+-        self.inhalt = zeile 
+-        
++        zeile[0] = zeile[0].lstrip(':')
++        self.inhalt = zeile
++
+     def Log(self):
+         '''schreibt das event ins logfile'''
+-        logging.log(quelle=self.quelle['gesamthost'],event=self.event,ziel=self.ziel,inhalt=self.inhalt)
++        pass
+ 
+     def Checkforcommand(self):
+         '''&#220;berpr&#252;ft die den Inhalt auf einen Befehl und gibt den zur&#252;ck bei Erfolg, ansonsten nichts'''
+@@ -57,4 +62,4 @@
+             argumente = self.inhalt
+             return {'befehl':befehl,'argumente':argumente}
+         else:
+-            return None
++            return False
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000038.html">[Pwnbot-commits] r52 - branches/recodemitclasses
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 26 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2026%20-%20trunk&In-Reply-To=%3CE1E9LLh-0004h8-AY%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000012.html">
+   <LINK REL="Next"  HREF="000014.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 26 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2026%20-%20trunk&In-Reply-To=%3CE1E9LLh-0004h8-AY%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 26 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Sun Aug 28 13:29:17 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000012.html">[Pwnbot-commits] rev 25 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000014.html">[Pwnbot-commits] rev 27 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-08-28 13:29:15 +0200 (Sun, 28 Aug 2005)
+New Revision: 26
+
+Modified:
+   trunk/
+   trunk/ircbot.py
+Log:
+Nochmal den Befehlsdispatcher etwas verbessert und Debugcode zu normalen Befehlen gemacht. Standardbefehle erg?\195?\164nzt. ref #11
+
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   + *.pyc
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-08-26 01:24:49 UTC (rev 25)
++++ trunk/ircbot.py	2005-08-28 11:29:15 UTC (rev 26)
+@@ -1,14 +1,14 @@
+ #!/usr/bin/env python
+ # -*- coding: iso8859-15 -*-
+ 
+-### ### ### ### ### ### ### ### ### ### ### ### ###
+-### ircbot                                      ###
+-###################################################
+-### weils keinen ircbot gab, der mir zusagte,   ###
+-### habe ich einen eigenen geschrieben.         ###
+-### das macht ihn nicht beser als die andren,   ###
+-### er tut aber genau das, was ich will.        ###
+-### ### ### ### ### ### ### ### ### ### ### ### ###
++# ## ### ### ### ### ### ### ### ### ### ### ### # #
++# ircbot                                        # #
++# ############################################### #
++# # weils keinen ircbot gab, der mir zusagte,   # #
++# # habe ich einen eigenen geschrieben.         # #
++# # das macht ihn nicht beser als die andren,   # #
++# # er tut aber genau das, was ich will.        # #
++# # ### ### ### ### ### ### ### ### ### ### ### # #
+ 
+ # was an modulen gebraucht wird.
+ import socket # f&#252;r die IRC-Verbindung
+@@ -119,6 +119,10 @@
+         befehl['befehl']
+         befehl['argumente']
+ 
++        anschlie&#223;end wird &#252;berpr&#252;ft, ob kein potentiell &quot;gef&#228;hrlicher&quot; Name f&#252;r den Befehl verwendet worden ist
++        Dann wird der Befehlshandler aufgerufen. Befehlshandler sind Funktionen mit cmd_ vorne dran.
++        Wenn es eine entsprechende Funktion existiert, wird &quot;befehl&quot; als ganzes &#252;bergeben.
++
+         '''
+         befehl = {}
+         befehl['quelle'] = zeile['quelle']
+@@ -139,6 +143,35 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Befehl nicht gefunden: %s' % befehl['befehl'])
+ 
++    # Befehlshandler
++    def cmd_debug(self,befehl):
++        '''ein fallback zum analysieren von befehlsketten'''
++        self.notice(befehl['quelle']['nick'],befehl)
++
++    def cmd_join(self, befehl):
++        '''betritt Channel
++
++        Interpretiert die Argumente des Befehls als Liste von Channeln, die nacheinander betreten werden'''
++        for channel in befehl['argumente']:
++            self.join(channel)
++
++    def cmd_say(self, befehl):
++        '''sagt etwas in einem Channel
++
++        Als erstes Argument wird das Ziel der Nachricht (Channel oder Nickname) hergenommen, der ganze Rest als Nachricht'''
++        ziel = befehl['argumente'][0]
++        nachricht = &quot; &quot;.join(befehl['argumente'][1:])
++        self.msg(ziel,nachricht)
++
++    def cmd_die(self,*befehl):
++        '''schaltet den Bot ab'''
++        befehl = befehl[0]
++        if befehl['quelle']['ident'] == 'tiax':
++            self.quit('diediedie')
++        else:
++            self.notice(befehl['quelle']['nick'],'Du darfst den Bot nicht abschalten')
++
++    # f&#252;r allen m&#246;glichen K&#228;se
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -146,7 +179,7 @@
+         gibt auch nix zur&#252;ck, erspart uns aber die l&#228;stige Fehlersuche, wenn die Zeichen am Zeilenende vergessen worden sind.'''
+         self.so.send('%s\r\n' % rausgehendes)
+ 
+-    ##### konkrete Befehle
++    # konkrete Befehle
+ 
+     def join(self,channel,key=''):
+         '''betritt Channel'''
+@@ -165,9 +198,9 @@
+         self.rawsend('quit :%s' % quitmessage)
+         self.so.close()
+ 
+-    ##### Events
++    # Events
+ 
+-    ## Numerics
++    # Numerics
+ 
+     def on_433(self,zeile):
+         ''' der nickname ist bereits belegt
+@@ -181,9 +214,9 @@
+     def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden
+         Das ist die ideale Gelegenheit, am Anfang auszufuehrende Befehle einzugeben'''
+-        self.join('#tiax')
++        pass
+ 
+-    ## Textevents
++    # Textevents
+ 
+     def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+@@ -191,8 +224,6 @@
+             print 'DEBUG: Befehl aufgeschnappt'
+             self._teile_befehl(zeile)
+         # DEBUG
+-        if 'die' in zeile['inhalt']:
+-            self.quit('diediedie')
+         elif 'ping' in zeile['inhalt']:
+             self.msg(zeile['ziel'],'%s: pong' % zeile['quelle']['nickname'])
+         print 'Nachricht von %s an %s: %s' % (zeile['quelle']['nickname'], zeile['ziel'], zeile['inhalt'])
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000012.html">[Pwnbot-commits] rev 25 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000014.html">[Pwnbot-commits] rev 27 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

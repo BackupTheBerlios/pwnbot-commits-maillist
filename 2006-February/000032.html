@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r46 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r46%20-%20trunk&In-Reply-To=%3C200602141029.k1EATNU9029539%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000031.html">
+   <LINK REL="Next"  HREF="000033.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r46 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r46%20-%20trunk&In-Reply-To=%3C200602141029.k1EATNU9029539%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r46 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Tue Feb 14 11:29:23 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000031.html">[Pwnbot-commits] r45 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000033.html">[Pwnbot-commits] r47 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-14 11:29:22 +0100 (Tue, 14 Feb 2006)
+New Revision: 46
+
+Modified:
+   trunk/ircbot.py
+Log:
+verbessertes errorhandling part1
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-10 21:20:59 UTC (rev 45)
++++ trunk/ircbot.py	2006-02-14 10:29:22 UTC (rev 46)
+@@ -30,7 +30,7 @@
+         '''gleich verbinden, wenn die klasse erstellt wird'''
+         self._lesebuffer = '' # wir brauchen einen leeren Buffer, in den geschrieben wird. Ein Buffer wird gebraucht, weil nicht alles sofort ankommt bei lag usw
+         #log
+-        print 'Verbindung zu %s wird hergestellt.' 
++        print 'Verbindung zu %s wird hergestellt.' % str(server)
+         self._verbinde(server,nickname,ident,realname) # gleich am Anfang wird verbunden
+ 
+     # Grundlegendes
+@@ -266,17 +266,20 @@
+         '''parsed einen xwars-kampfbericht'''
+         try:
+             url = befehl['argumente'][0]
+-        except IndexEror:
++        except IndexError:
+             self.msg(befehl['quelle']['nickname'],'Keine URL angegeben')
+-        try:
++        else:
+             kampfbericht = xwars.kampfbericht(url)
+-        except:
+-            self.msg(befehl['quelle']['nickname'],'Fehler')
+-        else:
+-            kampfbericht.analyze()
+-            kampfbericht.manipulate()
+-            kampfbericht.save()
+-            self.msg(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
++            try:
++                kampfbericht.analyze()
++            except (IOError), meldung:
++                self.notice(befehl['quelle']['nickname'],meldung)
++            except AttributeError:
++                self.notice(befehl['quelle']['nickname'],'Ung&#252;ltige URL')
++            else:
++                kampfbericht.manipulate()
++                kampfbericht.save()
++                self.notice(befehl['quelle']['nickname'],'URL: ' + kampfbericht.dateiname)
+ 
+     # f&#252;r allen m&#246;glichen K&#228;se
+     def rawsend(self,rausgehendes):
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000031.html">[Pwnbot-commits] r45 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000033.html">[Pwnbot-commits] r47 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

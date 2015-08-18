@@ -1,0 +1,322 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r43 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r43%20-%20trunk&In-Reply-To=%3C200602092318.k19NILUM014043%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000028.html">
+   <LINK REL="Next"  HREF="000030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r43 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r43%20-%20trunk&In-Reply-To=%3C200602092318.k19NILUM014043%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r43 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Fri Feb 10 00:18:21 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000028.html">[Pwnbot-commits] r42 - tags
+</A></li>
+        <LI>Next message: <A HREF="000030.html">[Pwnbot-commits] r44 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-10 00:18:20 +0100 (Fri, 10 Feb 2006)
+New Revision: 43
+
+Modified:
+   trunk/ircbot.py
+   trunk/parse.sh
+   trunk/xwars.py
+Log:
+aufr?\195?\164umarbeiten
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/ircbot.py	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python
+-# -*- coding: iso8859-15 -*-
++# -*- coding: utf-8 -*-
+ 
+ # ## ### ### ### ### ### ### ### ### ### ### ###
+ # ircbot
+
+Modified: trunk/parse.sh
+===================================================================
+--- trunk/parse.sh	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/parse.sh	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+ DATEINAME=$1
+ NEUERDATEINAME=`python xwars.py $1`
+-scp $NEUERDATEINAME <A HREF="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">tiax at nerds-r-us.org</A>:/var/www/tiax/eee
+-echo <A HREF="http://eee.planet-tiax.de/`echo">http://eee.planet-tiax.de/`echo</A> $NEUERDATEINAME|cut -d'/' -f7`
++scp $NEUERDATEINAME <A HREF="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">tiax at nerds-r-us.org</A>:/var/www/tdm/reports/html
++echo <A HREF="http://reports.victory-is-life.de/`echo">http://reports.victory-is-life.de/`echo</A> $NEUERDATEINAME|cut -d'/' -f7`
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-09 12:35:40 UTC (rev 42)
++++ trunk/xwars.py	2006-02-09 23:18:20 UTC (rev 43)
+@@ -1,6 +1,17 @@
+ #!/usr/bin/env python
+ # -*- coding: utf-8 -*-
+ 
++# ## ### ### ### ### ### ### ### ### ### ### ###
++# xwars
++# $Author$
++# $Date$
++# $Rev$
++# #############################################
++# # Ein library f&#252;r verschiedene Funktionen im#
++# # Browsergame X-Wars                        #
++# # ### ### ### ### ### ### ### ### ### ### ### 
++
++# was an Modulen gebraucht wird
+ from urllib import urlopen
+ from os import path
+ from gzip import GzipFile
+@@ -8,62 +19,72 @@
+ from re import compile
+ from sys import argv
+ 
+-# Konfiguration
+-# Mit was soll die URl anfangen?
+-urlstart = '<A HREF="http://reports.xwars.gamigo.de/">http://reports.xwars.gamigo.de/</A>'
+-cachedir = '/home/tiax/xwars/parser/cache/'
+-savedir = '/home/tiax/xwars/parser/save/'
++class kampfbericht:
++    '''X-Wars Kampfberichte sind ein tolles Objekt. 
+ 
+-class kampfbericht:
++    Erwartet: URL als String, sollte mit dem in der Konfiguration definierten 
++    String anfangen, ist sicherheitstechnisch wohl eine ganz gute Idee'''
++    
++    # Konfiguration
++    # Mit was soll die URl anfangen?
++    urlstart = '<A HREF="http://reports.xwars.gamigo.de/">http://reports.xwars.gamigo.de/</A>'
++    cachedir = '/home/tiax/xwars/parser/cache/'
++    savedir = '/home/tiax/xwars/parser/save/'
++
++
+     def __init__(self,url):
+-        if not path.isdir(cachedir):
++        '''wichtige Dinge, die vorher zu kl&#228;ren sind'''
++        if not path.isdir(self.cachedir): # gibts die wichtigsten Verzeichnisse?
+             raise IOError('Cachedir existiert nicht')
+-        if not path.isdir(savedir):
++        if not path.isdir(self.savedir):
+             raise IOError('Savedir existiert nicht')
+-        self.startbasis = {}
+-        self.zielbasis = {}
++        self.startbasis = {} # damit die Flottenfunktionen halbwegs 
++        self.zielbasis = {}  # voneinander aufgerufen werden koennen
+         self.url = url    
+-        self._get_id()
+-        self._get_kb()
+ 
+     def _get_id(self):
+-        '''&#252;berpr&#252;ft kampfbericht-urls auf ihre g&#252;ltigkeit
+-
+-        gets: url/string
+-        returns: kampfberichtid/string'''
++        '''&#252;berpr&#252;ft kampfbericht-urls auf ihre g&#252;ltigkeit'''
+         
+-        if not self.url.startswith(urlstart):
++        if not self.url.startswith(self.urlstart): # kleiner Schutz gegen allzugro&#223;en Unfug
+             raise IOError('Ung&#252;ltiger Server')
+-        if not (self.url.split('=')[1].startswith('combat') and self.url.split('=')[1].endswith('.html')):
++        if not (self.url.split('=')[1].startswith('combat') \
++            and self.url.split('=')[1].endswith('.html')):
+             raise IOError('Ug&#252;ltige ID')
+         else:
+             self.id =  self.url.split('=')[1].rstrip('.html')
+ 
+     def _get_kb(self):
+         '''holt den kampfbericht hervor 
+-        &#252;berpr&#252;ft zun&#228;chst, ob er vielleicht bereits abgerufen worden ist und l&#228;dt dann aus dem cache'''
+-        if path.isfile(cachedir + self.id):
+-            self.bericht = GzipFile(cachedir + self.id,'r').read()
++        &#252;berpr&#252;ft zun&#228;chst, ob er vielleicht bereits abgerufen worden ist
++        und l&#228;dt dann aus dem cache'''
++        if path.isfile(self.cachedir + self.id):
++            self.bericht = GzipFile(self.cachedir + self.id,'r').read()
+         else:
+-            bericht = urlopen('%(urlstart)s?id=%(berichtid)s.html' % {'urlstart':urlstart,'berichtid':self.id}).read()
+-            cachedatei = GzipFile(cachedir + self.id,'w')
++            bericht = urlopen('%(urlstart)s?id=%(berichtid)s.html' % \
++            {'urlstart':self.urlstart,'berichtid':self.id}).read()
++            cachedatei = GzipFile(self.cachedir + self.id,'w')
+             cachedatei.write(bericht)
+             cachedatei.close()
+             self.bericht =  bericht
+ 
+     def _get_daten(self):
++        '''extrahiert Daten &#252;ber die teilnehmenden Personen: Koordinaten, Allianz und Name'''
+         startregexp = compile(r'Startbasis &lt;b&gt;.*(\d{1,2}x\d{1,3}x\d{1,3})&lt;/b&gt;&lt;/br&gt;&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
+         zielregexp = compile(r'Zielbasis &lt;b&gt;.*(\d{1,2}x\d{1,3}x\d{1,3})&lt;/b&gt; &lt;/br&gt;von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
+         uhrzeitregexp = compile(r'Zeit &lt;b&gt;(\d+.\d+.\d+) (\d+:\d+:\d+.*)&lt;/b&gt;')
+-        self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
+-        self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
++        self.startbasis['Koordinaten'],\
++        self.startbasis['Allianz'],\
++        self.startbasis['Name'] = startregexp.search(self.bericht).groups()
++        self.zielbasis['Koordinaten'],\
++        self.zielbasis['Allianz'], \
++        self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
+         self.zeit = strptime(&quot; &quot;.join(uhrzeitregexp.search(self.bericht).groups()), '%d.%m.%Y %H:%M:%S')
+         
+     def _get_werte(self):
++        '''Holt sich die Flottenwerte, Verluste noch nicht'''
+         flottenregexp = compile(r'org: (\d+)/(\d+) surv: (\d+)?/(\d+)?')
+         flotten = flottenregexp.findall(self.bericht)
+         # Angreifer haben nur eine Flotte und sind schnell erledigt
+-        # self.startbasis['Flotte'] = flotten.pop(0)
+         templiste = []
+         for item in flotten.pop(0):
+             templiste.append(int((item or 0)))
+@@ -72,14 +93,15 @@
+         # Verteidiger haben mehrere + Defense aber das z&#228;hlen wir alles zusammen
+         AttVorher, DefVorher, AttNachher, DefNachher = 0,0,0,0
+         for item in flotten:
+-            AttVorher += int((item[0]) or 0)
+-            DefVorher += int((item[1]) or 0)
+-            AttNachher += int((item[2]) or 0)
+-            DefNachher += int((item[3]) or 0)
++            AttVorher += int((item[0]) or 0) # or 0 ist notwendig
++            DefVorher += int((item[1]) or 0) # verlorene Flotten sind bei X-Wars
++            AttNachher += int((item[2]) or 0) # nicht 0 
++            DefNachher += int((item[3]) or 0) # sondern nix.
+         self.zielbasis['Flotte'] = (AttVorher, DefVorher, AttNachher, DefNachher)
+         self.zielbasis['MP'] = (AttVorher + DefVorher) / 200.0
+         
+     def _get_verluste(self):
++        '''Holt sich die Verluste. Es ist sinnvoll, erst die Werte zu holen'''
+         StartbasisVerluste = (abs(self.startbasis['Flotte'][0] - self.startbasis['Flotte'][2]), abs(self.startbasis['Flotte'][1] - self.startbasis['Flotte'][3]))
+         ZielbasisVerluste = (abs(self.zielbasis['Flotte'][0] - self.zielbasis['Flotte'][2]), abs(self.zielbasis['Flotte'][1] - self.zielbasis['Flotte'][3]))
+         self.startbasis['Verluste'] = StartbasisVerluste
+@@ -88,6 +110,7 @@
+         self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200.0
+ 
+     def _make_template(self):
++        '''F&#252;llt die ermittelten Daten und Werte ins Template ein'''
+         template = '''&lt;/table&gt;&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;&lt;tr&gt;&lt;td height=&quot;12px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;
+ 		        &lt;td width=&quot;282px&quot;&gt;&lt;/td&gt;
+ 		        &lt;td width=&quot;45px&quot; height=&quot;9&quot; bgcolor=&quot;#2A2A2A&quot;&gt;&lt;/td&gt;
+@@ -152,14 +175,14 @@
+ 		&lt;/tr&gt;
+ &lt;/table&gt;
+ &lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;&lt;tr&gt;&lt;td height=&quot;12px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;''' % {'Angreifername':self.startbasis['Name'],
+-        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + '/' + str(self.startbasis['Flotte'][1]),
+-        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + '/' + str(self.startbasis['Flotte'][3]),
++        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + ' / ' + str(self.startbasis['Flotte'][1]),
++        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + ' / ' + str(self.startbasis['Flotte'][3]),
+         'Angreifermpvorher':self.startbasis['MP'],
+         'Angreifermpnachher':(self.startbasis['MP'] - self.startbasis['MPVerluste']),
+         'Angreifermpverlust':self.startbasis['MPVerluste'],
+         'Verteidigername':self.zielbasis['Name'],
+-        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + '/' + str(self.zielbasis['Flotte'][1]),
+-        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + '/' + str(self.zielbasis['Flotte'][3]),
++        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + ' / ' + str(self.zielbasis['Flotte'][1]),
++        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + ' / ' + str(self.zielbasis['Flotte'][3]),
+         'Verteidigermpvorher': self.zielbasis['MP'],
+         'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
+         'Verteidigermpverlust': self.zielbasis['MPVerluste']
+@@ -167,15 +190,33 @@
+         self.template = template
+ 
+     def _make_namestring(self):
++        '''Erstellt einen Dateinamentauglichen Namen f&#252;r de Kampfbericht'''
+         self.namestring = '%(Angreiferallianz)s%(Angreifername)s-%(Verteidigerallianz)s-%(Verteidigername)s-%(Zeit)s' % {'Angreiferallianz':self.startbasis['Allianz'],'Angreifername':self.startbasis['Name'],'Verteidigerallianz':self.zielbasis['Allianz'],'Verteidigername':self.zielbasis['Name'],'Zeit':strftime('%Y%m%d-%H%M',self.zeit)}
+         
+     def _insert_template(self):
++        '''f&#252;gt das ausgef&#252;llte Template in den Kampfbericht ein'''
+         berichtliste = self.bericht.splitlines()
+         del berichtliste[berichtliste.index('                &lt;td bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;Gesamt&nbsp;&lt;br&gt;(netto)&nbsp;&lt;/td&gt;') + 2]
+         berichtliste.insert(berichtliste.index('                &lt;td bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;Gesamt&nbsp;&lt;br&gt;(netto)&nbsp;&lt;/td&gt;') + 1,self.template)
+         self.bearbeiteterbericht = berichtliste
+ 
++    def getreport(self):
++        '''Zusammenfassung: Bericht organisieren'''
++        self._get_id()
++        self._get_kb()
++
++    def analyze(self):
++        '''Zusammenfassung: Bericht analysieren und Daten ermitteln'''
++        self.getreport()
++        self._get_daten()
++        self._get_werte()
++        self._get_verluste()
++        self._make_namestring()
++
+     def manipulate(self):
++        '''Zusammenfassung: Den original-Kampfbericht ver&#228;ndern'''
++        self._make_template()
++        self._insert_template()
+         koordinatenregexp = compile(r'\d{1,2}x\d{1,3}x\d{1,3}')
+         bericht = '\n'.join(self.bearbeiteterbericht)
+         bericht = koordinatenregexp.sub('',bericht)
+@@ -187,18 +228,14 @@
+         self.bearbeiteterbericht = bericht.splitlines()
+         
+     def save(self):
+-        self.dateiname = savedir + self.namestring.replace('[','').replace(']','-') + '.html'
++        '''Den Bericht ins Dateisystem speichern'''
++        self.dateiname = self.savedir + self.namestring.replace('[','').replace(']','-') + '.html'
+         berichtdatei = open(self.dateiname,'w')
+         berichtdatei.writelines(self.bearbeiteterbericht)
+ 
+ if __name__ == &quot;__main__&quot;:
+     kb = kampfbericht(argv[1])
+-    kb._get_daten()
+-    kb._get_werte()
+-    kb._get_verluste()
+-    kb._make_template()
+-    kb._insert_template()
+-    kb._make_namestring()
++    kb.analyze()
+     kb.manipulate()
+     kb.save()
+     print kb.dateiname
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000028.html">[Pwnbot-commits] r42 - tags
+</A></li>
+	<LI>Next message: <A HREF="000030.html">[Pwnbot-commits] r44 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 31 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2031%20-%20trunk&In-Reply-To=%3CE1EhyIV-0004B9-7d%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000019.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 31 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2031%20-%20trunk&In-Reply-To=%3CE1EhyIV-0004B9-7d%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 31 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Fri Dec  2 00:57:07 CET 2005</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000019.html">[Pwnbot-commits] rev 32 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-12-02 00:57:03 +0100 (Fri, 02 Dec 2005)
+New Revision: 31
+
+Modified:
+   trunk/ircbot.py
+Log:
+raw-befehl hinzugef?\195?\188gt
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-10-03 11:16:58 UTC (rev 30)
++++ trunk/ircbot.py	2005-12-01 23:57:03 UTC (rev 31)
+@@ -71,7 +71,7 @@
+         erh&#228;lt:
+             nichts
+ 
+-        gibt zurck:
++        gibt zur&#252;ck:
+             nichts
+ 
+         ruft auf:
+@@ -154,9 +154,7 @@
+         befehl['quelle'] = zeile['quelle']
+         befehl['ziel'] = zeile['ziel']
+         if zeile['inhalt'][0].startswith(self.currentnickname):
+-            zeile['inhalt'].reverse()
+-            zeile['inhalt'].pop()
+-            zeile['inhalt'].reverse()
++            zeile['inhalt'].pop(0)
+         befehl['befehl'] = zeile['inhalt'][0]
+         befehl['argumente'] = zeile['inhalt'][1:]
+         try:
+@@ -168,7 +166,7 @@
+             self.logger.log('Fehler','Befehl von %s nicht gefunden: %s' % (befehl['quelle']['nickname'],&quot; &quot;.join([befehl['befehl'],&quot; &quot;.join(befehl['argumente'])])))
+ 
+     # Befehlshandler
+-        def cmd_join(self, befehl):
++    def cmd_join(self, befehl):
+         '''betritt Channel
+ 
+         erh&#228;lt:
+@@ -230,6 +228,21 @@
+         else:
+             self.notice(befehl['quelle']['nickname'],'Pong')
+ 
++    def cmd_raw(self,befehl):
++        '''l&#228;sst Rohdaten an den Server schicken, ist nat&#252;rlich mit Vorsicht zu genie&#223;en.
++        erh&#228;lt:
++            befehl[argumente] als Liste
++
++        gibt zur&#252;ck:
++            nichts
++
++        ruft auf:
++            raw mit genau dem, was der user befiehlt'''
++        
++        self.rawsend(&quot; &quot;.join(befehl['argumente']))
++ 
++
++
+     # f&#252;r allen m&#246;glichen K&#228;se
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000019.html">[Pwnbot-commits] rev 32 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

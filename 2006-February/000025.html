@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r39 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r39%20-%20trunk&In-Reply-To=%3C200602091139.k19Bddhk012077%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000024.html">
+   <LINK REL="Next"  HREF="000026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r39 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r39%20-%20trunk&In-Reply-To=%3C200602091139.k19Bddhk012077%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r39 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Thu Feb  9 12:39:39 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000024.html">[Pwnbot-commits] r38 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000026.html">[Pwnbot-commits] r40 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2006-02-09 12:39:36 +0100 (Thu, 09 Feb 2006)
+New Revision: 39
+
+Modified:
+   trunk/xwars.py
+Log:
+html klappt
+
+Modified: trunk/xwars.py
+===================================================================
+--- trunk/xwars.py	2006-02-08 01:08:04 UTC (rev 38)
++++ trunk/xwars.py	2006-02-09 11:39:36 UTC (rev 39)
+@@ -51,8 +51,8 @@
+             self.bericht =  bericht
+ 
+     def _get_daten(self):
+-        startregexp = compile(r'Startbasis &lt;b&gt; (.+)&lt;/b&gt;&lt;/br&gt;&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
+-        zielregexp = compile(r'Zielbasis &lt;b&gt; (.+)&lt;/b&gt; &lt;/br&gt;von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
++        startregexp = compile(r'Startbasis &lt;b&gt;.*(\d{1,2}x\d{1,3}x\d{1,3})&lt;/b&gt;&lt;/br&gt;&nbsp;von ?(\[.+\])? ?(.+)&nbsp;')
++        zielregexp = compile(r'Zielbasis &lt;b&gt;.*(\d{1,2}x\d{1,3}x\d{1,3})&lt;/b&gt; &lt;/br&gt;von&nbsp; ?(\[.+\])? ?(.+)&nbsp;')
+         uhrzeitregexp = compile(r'Zeit &lt;b&gt;(\d+.\d+.\d+) (\d+:\d+:\d+.*)&lt;/b&gt;')
+         self.startbasis['Koordinaten'],self.startbasis['Allianz'], self.startbasis['Name'] = startregexp.search(self.bericht).groups()
+         self.zielbasis['Koordinaten'], self.zielbasis['Allianz'], self.zielbasis['Name'] = zielregexp.search(self.bericht).groups()
+@@ -83,9 +83,102 @@
+         ZielbasisVerluste = (abs(self.zielbasis['Flotte'][0] - self.zielbasis['Flotte'][2]), abs(self.zielbasis['Flotte'][1] - self.zielbasis['Flotte'][3]))
+         self.startbasis['Verluste'] = StartbasisVerluste
+         self.zielbasis['Verluste'] = ZielbasisVerluste
+-        self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200
+-        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200
++        self.startbasis['MPVerluste'] = (StartbasisVerluste[0] + StartbasisVerluste[1]) / 200.0
++        self.zielbasis['MPVerluste'] = (ZielbasisVerluste[0] + ZielbasisVerluste[1]) / 200.0
+ 
++    def _make_template(self):
++        template = '''&lt;/table&gt;&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;&lt;tr&gt;&lt;td height=&quot;12px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;
++		        &lt;td width=&quot;282px&quot;&gt;&lt;/td&gt;
++		        &lt;td width=&quot;45px&quot; height=&quot;9&quot; bgcolor=&quot;#2A2A2A&quot;&gt;&lt;/td&gt;
++		        &lt;td width=&quot;12px&quot;&gt;&lt;/td&gt;
++		        &lt;td width=&quot;45px&quot; xbgcolor=&quot;#2A2A2A&quot;&gt;&lt;/td&gt;
++		        &lt;td width=&quot;281px&quot;&gt;&lt;/td&gt;
++		  &lt;/tr&gt;
++		  &lt;tr&gt;
++		        &lt;td xwidth=&quot;282&quot; colspan=&quot;2&quot; bgcolor=&quot;#2A2A2A&quot; height=&quot;35px&quot;&gt;&nbsp;&lt;b&gt;Statistiken&lt;/b&gt;
++
++				&lt;br&gt;&nbsp;&lt;font color=&quot;#CCCCCC&quot;&gt;Verluste&lt;/td&gt;
++		        &lt;td width=&quot;12px&quot;&gt;&lt;/td&gt;
++		        &lt;td xwidth=&quot;326px&quot; colspan=&quot;2&quot; xbgcolor=&quot;#2A2A2A&quot;&gt;&lt;font color=&quot;#222222&quot;&gt;TDM Warreport v1 py&lt;/td&gt;
++		  &lt;/tr&gt;
++               &lt;/table&gt;
++		    
++		&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;
++		&lt;tr&gt;&lt;td bgcolor=&quot;#2A2A2A&quot; height=&quot;9px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
++		&lt;tr&gt;
++
++			&lt;td width= &quot;5px&quot; bgcolor=&quot;#2A2A2A&quot;&gt;&nbsp;&lt;/td&gt;
++            &lt;td width=  &quot;5px&quot; &gt;&lt;/td&gt;
++            &lt;td&gt;&lt;b&gt;&nbsp;Werte vorher&lt;/td&gt;
++			&lt;td&gt;&lt;b&gt;&nbsp;nachher&lt;/b&gt;&lt;/td&gt;
++			&lt;td&gt;&lt;b&gt;&nbsp;Milit&auml;rpunkte vorher&lt;/b&gt;&lt;/td&gt;
++            &lt;td&gt;&lt;b&gt;nachher&lt;/b&gt;&lt;/td&gt;
++			&lt;td&gt;&lt;b&gt;Verlust&lt;/b&gt;&lt;/td&gt;
++         &lt;/tr&gt;
++         &lt;tr&gt;&lt;td bgcolor=&quot;#2A2A2A&quot; height=&quot;3&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
++        &lt;tr&gt;&lt;td bgcolor=&quot;#444444&quot; height=&quot;3&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
++        &lt;tr&gt;&lt;td bgcolor=&quot;#444444&quot; height=&quot;1px&quot;&gt;&lt;/td&gt;&lt;td colspan=&quot;12&quot; bgcolor=&quot;#000000&quot;&gt;&lt;/tr&gt;
++        &lt;tr height=&quot;18px&quot;&gt;
++			&lt;td width=&quot;50px&quot; bgcolor=&quot;#444444&quot;&gt;&nbsp;Angreifer&lt;/td&gt;
++            &lt;td width=  &quot;5px&quot; &gt;&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;&nbsp;%(Angreiferwertevorher)s&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Angreiferwertenachher)s&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Angreifermpvorher).2f&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Angreifermpnachher).2f&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Angreifermpverlust).2f&lt;/td&gt;
++		&lt;/tr&gt;
++		&lt;tr&gt;&lt;td bgcolor=&quot;#444444&quot; height=&quot;1px&quot;&gt;&lt;/td&gt;&lt;td colspan=&quot;12&quot; bgcolor=&quot;#000000&quot;&gt;&lt;/tr&gt;
++		&lt;tr&gt;&lt;td bgcolor=&quot;#2A2A2A&quot; height=&quot;9&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
++        &lt;tr height=&quot;18px&quot;&gt;
++			&lt;td width=&quot;50px&quot; bgcolor=&quot;#444444&quot;&gt;&nbsp;Verteidiger&lt;/td&gt;
++            &lt;td width=  &quot;5px&quot; &gt;&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;&nbsp;%(Verteidigerwertevorher)s&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Verteidigerwertenachher)s&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Verteidigermpvorher).2f&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Verteidigermpnachher).2f&lt;/td&gt;
++		    &lt;td bgcolor=&quot;#1A1A1A&quot;&gt;%(Verteidigermpverlust).2f&lt;/td&gt;
++		&lt;/tr&gt;
++		&lt;tr&gt;&lt;td bgcolor=&quot;#444444&quot; height=&quot;1px&quot;&gt;&lt;/td&gt;&lt;td colspan=&quot;12&quot; bgcolor=&quot;#000000&quot;&gt;&lt;/tr&gt;
++        &lt;tr&gt;&lt;td bgcolor=&quot;#2A2A2A&quot; height=&quot;9&quot;&gt;&lt;/td&gt;&lt;/tr&gt;
++&lt;/table&gt;
++&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot;&gt;
++		&lt;tr&gt;
++		    &lt;td width=&quot;50px&quot;  bgcolor=&quot;#2A2A2A&quot; height=&quot;35px&quot;&gt;&lt;br&gt;&nbsp;&lt;/td&gt;
++		    &lt;td width=&quot;65px&quot;  bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;&lt;font color=&quot;CCCCCC&quot;&gt;&nbsp;&lt;br&gt;&nbsp;&lt;/td&gt;
++		    &lt;td width=&quot;20px&quot;  bgcolor=&quot;#2A2A2A&quot;&gt;&lt;font color=&quot;#888888&quot;&gt;&lt;br&gt;&lt;/td&gt;
++		    &lt;td width=&quot;146px&quot; bgcolor=&quot;#2A2A2A&quot;&gt;&lt;font color=&quot;#CC5500&quot;&gt;&nbsp;&nbsp;&lt;br&gt;&nbsp;&nbsp;&lt;br&gt;&lt;/td&gt;
++		    &lt;td width=&quot;45px&quot;  bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;&lt;b&gt;&nbsp;&nbsp;&lt;br&gt;&nbsp;&nbsp;&lt;/td&gt;
++		&lt;/tr&gt;
++&lt;/table&gt;
++&lt;table border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;665px&quot;&gt;&lt;tr&gt;&lt;td height=&quot;12px&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;''' % {'Angreifername':self.startbasis['Name'],
++        'Angreiferwertevorher':str(self.startbasis['Flotte'][0]) + '/' + str(self.startbasis['Flotte'][1]),
++        'Angreiferwertenachher':str(self.startbasis['Flotte'][2]) + '/' + str(self.startbasis['Flotte'][3]),
++        'Angreifermpvorher':self.startbasis['MP'],
++        'Angreifermpnachher':(self.startbasis['MP'] - self.startbasis['MPVerluste']),
++        'Angreifermpverlust':self.startbasis['MPVerluste'],
++        'Verteidigername':self.zielbasis['Name'],
++        'Verteidigerwertevorher':str(self.zielbasis['Flotte'][0]) + '/' + str(self.zielbasis['Flotte'][1]),
++        'Verteidigerwertenachher':str(self.zielbasis['Flotte'][2]) + '/' + str(self.zielbasis['Flotte'][3]),
++        'Verteidigermpvorher': self.zielbasis['MP'],
++        'Verteidigermpnachher': (self.zielbasis['MP'] - self.zielbasis['MPVerluste']),
++        'Verteidigermpverlust': self.zielbasis['MPVerluste']
++        }
++        self.template = template
++
++    def _insert_template(self):
++        berichtliste = self.bericht.splitlines()
++        del berichtliste[berichtliste.index('                &lt;td bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;Gesamt&nbsp;&lt;br&gt;(netto)&nbsp;&lt;/td&gt;') + 2]
++        berichtliste.insert(berichtliste.index('                &lt;td bgcolor=&quot;#2A2A2A&quot; align=&quot;right&quot;&gt;Gesamt&nbsp;&lt;br&gt;(netto)&nbsp;&lt;/td&gt;') + 1,self.template)
++        self.bearbeiteterbericht = berichtliste
++
++    def manipulate(self):
++        koordinatenregexp = compile(r'\d{1,2}x\d{1,3}x\d{1,3}')
++        bericht = '\n'.join(self.bearbeiteterbericht)
++        bericht = koordinatenregexp.sub('',bericht)
++        bericht = bericht.replace('Login','The Dominion')
++        bericht = bericht.replace('auf Planet','auf einem Planeten')
++        self.bearbeiteterbericht = bericht.splitlines()
++        
+     def save(self):
+         berichtdatei = open(savedir + self.id,'w')
+-        berichtdatei.write(self.bericht)
++        berichtdatei.writelines(self.bearbeiteterbericht)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000024.html">[Pwnbot-commits] r38 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000026.html">[Pwnbot-commits] r40 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

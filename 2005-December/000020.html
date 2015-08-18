@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] r34 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r34%20-%20trunk&In-Reply-To=%3C200512281602.jBSG2hph010824%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000019.html">
+   <LINK REL="Next"  HREF="000021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] r34 - trunk</H1>
+    <B>tiax at BerliOS</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20r34%20-%20trunk&In-Reply-To=%3C200512281602.jBSG2hph010824%40sheep.berlios.de%3E"
+       TITLE="[Pwnbot-commits] r34 - trunk">tiax at berlios.de
+       </A><BR>
+    <I>Wed Dec 28 17:02:43 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000019.html">[Pwnbot-commits] rev 32 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000021.html">[Pwnbot-commits] r35 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-12-28 17:02:43 +0100 (Wed, 28 Dec 2005)
+New Revision: 34
+
+Removed:
+   trunk/log.py
+Log:
+das hier wird dann wohl auch nicht mehr ben?\195?\182tigt
+
+
+Deleted: trunk/log.py
+===================================================================
+--- trunk/log.py	2005-12-02 21:16:54 UTC (rev 33)
++++ trunk/log.py	2005-12-28 16:02:43 UTC (rev 34)
+@@ -1,30 +0,0 @@
+-#!/usr/bin/env python
+-# -*- coding: iso8859-15 -*-
+-'''stellt mehrere log-funktionen zur Verf&#252;gung'''
+-
+-from sys import exit
+-from time import strftime
+-class EinzelDateiLogger:
+-    def __init__(self,dateiname):
+-        '''&#246;ffnet die Datei
+-
+-        erwartet: dateiname des Logfiles. Das Verzeichnis in dem es liegt, muss existieren!'''
+-        try:
+-            self.logdatei = open(dateiname,'a',1)
+-        except IOError:
+-            exit('Verzeichnis nicht vorhanden')
+-
+-    def log(self,kategorie,nachricht):
+-        '''erstellt erst ein Datum und schreibt dann in die Datei
+-        
+-        erwartet: 
+-        kategorie als string
+-        nachricht als string
+-        
+-        gibt zur&#252;ck: nichts, schreibt aber im Format YYYY-MM-DD HH:MM:SS | Kategorie | Hier die Nachricht in die Datei. Dabei werden in der Nachricht alle | durch / ersetzt.'''
+-        datum = strftime('%Y-%m-%d %H:%M:%S')
+-        self.logdatei.write('%s|%s|%s\n' % (datum,kategorie,nachricht.replace('|','/')))
+-    
+-    def flush(self):
+-        '''sicherheitshalber noch das flush-feature weiterreichen'''
+-        self.logdatei.flush()
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000019.html">[Pwnbot-commits] rev 32 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000021.html">[Pwnbot-commits] r35 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>

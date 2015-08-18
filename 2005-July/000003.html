@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Pwnbot-commits] rev 16 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/pwnbot-commits/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2016%20-%20trunk&In-Reply-To=%3CE1Dv1GK-0000Ez-30%40tiax.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000002.html">
+   <LINK REL="Next"  HREF="000004.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Pwnbot-commits] rev 16 - trunk</H1>
+    <B>tiax at tiax.info</B> 
+    <A HREF="mailto:pwnbot-commits%40lists.berlios.de?Subject=Re%3A%20%5BPwnbot-commits%5D%20rev%2016%20-%20trunk&In-Reply-To=%3CE1Dv1GK-0000Ez-30%40tiax.info%3E"
+       TITLE="[Pwnbot-commits] rev 16 - trunk">tiax at tiax.info
+       </A><BR>
+    <I>Wed Jul 20 01:12:32 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000002.html">[Pwnbot-commits] rev 15 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000004.html">[Pwnbot-commits] rev 17 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: tiax
+Date: 2005-07-20 01:12:30 +0200 (Wed, 20 Jul 2005)
+New Revision: 16
+
+Modified:
+   trunk/ircbot.py
+Log:
+eingehende Ereignisse werden jetzt an _chopit ?\195?\188bergeben und dort in ein dictionary (quelle, event, ziel und evtl. inhalt) aufgetielt. reagiert jetzt im channel 
+auch auf &quot;ping&quot;. closes #7
+
+
+Modified: trunk/ircbot.py
+===================================================================
+--- trunk/ircbot.py	2005-07-19 22:27:07 UTC (rev 15)
++++ trunk/ircbot.py	2005-07-19 23:12:30 UTC (rev 16)
+@@ -86,11 +86,21 @@
+                 else:
+                     try:
+                         befehl = getattr(self,'on_%s' % zeile[1])
+-                        print 'DEBUG: %s wird aufgerufen' % befehl
+-                        befehl(zeile)
++                        befehl(self._chopit(zeile))
+                     except AttributeError:
+-                        self.on_UNBEKANNT(zeile)
++                        self.on_UNBEKANNT(self._chopit(zeile))
+ 
++    def _chopit(self, zeile):
++        ''' teilt reingehendes in ein Dictionary von Quelle, Event, Ziel und Inhalt auf'''
++        temp = {}
++        temp['quelle'] = zeile[0].lstrip(':')
++        temp['event'] = zeile[1]
++        temp['ziel'] = zeile[2]
++        if len(zeile) &gt;= 4:
++            temp['inhalt'] = zeile[3:]
++            temp['inhalt'][0] = temp['inhalt'][0].lstrip(':')
++        return temp
++
+     def rawsend(self,rausgehendes):
+         '''schickt Daten an den Server
+         erwartet:
+@@ -107,8 +117,8 @@
+ 
+     def msg(self,ziel,nachricht):
+         '''schickt Nachrichten raus'''
+-        print 'DEBUG: &gt;&gt; PRIVMSG an %s: %s' % (ziel, nachricht)
+-        self.rawsend('PRIVMSG %S :%s' % (ziel, nachricht))
++        print 'Nachricht an %s: %s' % (ziel, nachricht)
++        self.rawsend('PRIVMSG %s :%s' % (ziel, nachricht))
+ 
+     def quit(self,quitmessage):
+         print 'DEBUG: &lt;&gt; Beende'
+@@ -117,7 +127,7 @@
+ 
+     ##### Events
+ 
+-    def on_433(self,*args):
++    def on_433(self,zeile):
+         ''' der nickname ist bereits belegt'''
+         try:
+             neuernick = self.nicknames.pop(0)
+@@ -125,16 +135,18 @@
+             exit('Nicknames sind ausgegangen')
+         self.rawsend('NICK %s' % neuernick)
+ 
+-    def on_001(self,*args):
++    def on_001(self,zeile):
+         '''die IRC Verbindung ist gerade hergestellt worden'''
+         self.join('#tiax')
+ 
+-    def on_PRIVMSG(self,*args):
++    def on_PRIVMSG(self,zeile):
+         '''bearbeitet eingehende Nachrichten'''
+-        print args
+-        if len(args[0]) &gt;= 3 and args[0][3].lstrip(':') == 'die':
++        if 'die' in zeile['inhalt']:
+             self.quit('diediedie')
++        elif 'ping' in zeile['inhalt']:
++            self.msg(zeile['ziel'],'%s: pong' % zeile['quelle'])
++        print 'Nachricht von %s an %s: %s' % (zeile['quelle'], zeile['ziel'], zeile['inhalt'])
+ 
+-    def on_UNBEKANNT(self,*args):
++    def on_UNBEKANNT(self,zeile):
+         '''verarbeitet alles, was nicht sonstwie verarbeitet werden kann'''
+         pass
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000002.html">[Pwnbot-commits] rev 15 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000004.html">[Pwnbot-commits] rev 17 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/pwnbot-commits">More information about the Pwnbot-commits
+mailing list</a><br>
+</body></html>
